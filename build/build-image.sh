@@ -114,6 +114,10 @@ echo "accounts in the base image:"; awk -F: '$3 >= 1000 && $3 < 65000 {print "  
 in_root groupadd -f plugdev
 in_root useradd -m -u "$KIOSK_UID" -s /bin/bash -G plugdev,video,render,input,audio "$KIOSK_USER"
 in_root passwd -l "$KIOSK_USER"
+# Raspberry Pi OS's placeholder account (its first-boot wizard renames it): unused here, locked
+if grep -q '^pi:' "$ROOT/etc/passwd"; then
+    in_root usermod -L -s /usr/sbin/nologin pi
+fi
 if [ -n "$DEV_USER" ]; then
     in_root useradd -m -s /bin/bash -G sudo,adm,plugdev,netdev,video "$DEV_USER"
     echo "$DEV_USER:$DEV_PASSWORD" | in_root chpasswd

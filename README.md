@@ -70,6 +70,8 @@ Settings (base image, sizes, hostname, dev login) are in `build/config.env`.
 - `build/build-image.sh`: the image build (download, partitions, packages, PHYLAX Suite, users,
   services)
 - `build/config.env`: its settings
+- `build/check-image.sh`: checks a built image (partitions, PHYLAX Suite and its libraries,
+  services, users, data partition); the GitHub build runs it
 - `rootfs/`: files copied into the system: the kiosk service, the first-boot data partition grow,
   the Wi-Fi setup, SSH host keys made on each station's first boot
 - `boot/phylax-wifi.txt`: the Wi-Fi file on the boot partition

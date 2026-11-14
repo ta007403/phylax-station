@@ -56,6 +56,9 @@ jobs:
       - name: Build the image
         run: sudo build/build-image.sh suite/PHYLAX-Suite*.AppImage out
 
+      - name: Check the image
+        run: sudo build/check-image.sh out/*.img.xz
+
       - name: Upload the image
         uses: actions/upload-artifact@v4
         with:
