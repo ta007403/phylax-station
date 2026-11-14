@@ -47,6 +47,7 @@ echo "  cmdline.txt: $cmd"
 check "no first-boot resize of the system partition" bash -c "! grep -qwE 'resize|init=[^ ]*firstboot' <<<'$cmd'"
 check "Wi-Fi country $WIFI_COUNTRY" grep -q "cfg80211.ieee80211_regdom=$WIFI_COUNTRY" "$B/cmdline.txt"
 check "phylax-wifi.txt" grep -q '^SSID=$' "$B/phylax-wifi.txt"
+check "Wi-Fi on in NetworkManager" bash -c "! grep -q '^WirelessEnabled=false' '$R/var/lib/NetworkManager/NetworkManager.state' 2>/dev/null"
 check "Wi-Fi not blocked in the saved radio state" bash -c "! grep -qx 1 '$R'/var/lib/systemd/rfkill/*wlan 2>/dev/null"
 check "no Imager/cloud-init user files" bash -c "! ls '$B'/userconf.txt '$B'/user-data 2>/dev/null | grep -q ."
 
