@@ -22,6 +22,13 @@ keyboard and trackpad, that starts straight into **PHYLAX Suite** with the PHYLA
 
 Production images will have no login and no SSH.
 
+## Settings > Station
+
+In PHYLAX Suite, **Settings > Station** (only on the station): Wi-Fi (scan, connect with a
+password, forget), Ethernet status, **Shut down** / **Restart**, and the image's versions. A polkit
+rule (`rootfs/etc/polkit-1/rules.d/50-phylax-station.rules`) lets the kiosk user do exactly this,
+without a password.
+
 ## Get the image
 
 GitHub → this repo → **Actions** → **Build station image** → the newest green run → artifact
@@ -49,7 +56,7 @@ build. To pick another PHYLAX Suite build: **Run workflow** with its run id.
    COUNTRY=TH
    ```
    Save, eject. On boot the station joins that Wi-Fi and removes the password from the file.
-   Or later on the station: **Ctrl+Alt+F2**, log in, `sudo nmtui` → *Activate a connection*.
+   Or later on the station: PHYLAX Suite → **Settings > Station** → *Scan for networks*.
 6. Remove the USB boot jumper, power the station: PHYLAX Suite starts on the screen.
 
 **Writing a whole image replaces everything on the eMMC, the data partition too.** An update that

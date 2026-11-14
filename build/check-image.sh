@@ -59,6 +59,8 @@ check "all its libraries present" test -z "$missing"
 check "udev rules for the blocks (Trezor One USB ids)" grep -qi '534c' "$R/etc/udev/rules.d/51-trezor.rules"
 check "start script" test -x "$R/usr/local/bin/phylax-suite"
 check "cage" test -x "$R/usr/bin/cage"
+check "polkit (Settings > Station may manage Wi-Fi and power)" test -x "$R/usr/lib/polkit-1/polkitd"
+check "polkit rule for the kiosk user" grep -q '"phylax"' "$R/etc/polkit-1/rules.d/50-phylax-station.rules"
 
 echo "Services"
 for s in graphical.target.wants/phylax-kiosk.service multi-user.target.wants/phylax-grow-data.service \
