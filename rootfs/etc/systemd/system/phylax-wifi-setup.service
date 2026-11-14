@@ -2,7 +2,7 @@
 # partition, if one was written there.
 [Unit]
 Description=PHYLAX Wi-Fi setup
-After=NetworkManager.service
+After=NetworkManager.service systemd-rfkill.service
 Wants=NetworkManager.service
 
 [Service]

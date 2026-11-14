@@ -146,6 +146,13 @@ for unit in userconfig.service rpi-resize.service rpi-resize-swap-file.service \
     in_root systemctl disable "$unit" 2>/dev/null && echo "disabled $unit" || true
 done
 [ -d "$ROOT/etc/cloud" ] && touch "$ROOT/etc/cloud/cloud-init.disabled"
+# Wi-Fi on: Raspberry Pi OS ships its saved radio state as "Wi-Fi blocked" (lifted by setting a
+# country in raspi-config); systemd-rfkill would restore it at every boot.
+for f in "$ROOT"/var/lib/systemd/rfkill/*wlan; do
+    [ -e "$f" ] || continue
+    echo "rfkill state $(basename "$f"): $(cat "$f") -> 0"
+    echo 0 >"$f"
+done
 rm -f "$ROOT/boot/firmware/userconf.txt" "$ROOT/boot/firmware/user-data" "$ROOT/boot/firmware/network-config"
 
 log "PHYLAX station files and services"

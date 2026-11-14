@@ -4,7 +4,15 @@
 # from the file.
 set -u
 FILE=/boot/firmware/phylax-wifi.txt
+
+# Raspberry Pi OS keeps Wi-Fi switched off until a country is set. Switch it on once the Wi-Fi
+# chip is there (its driver may still be loading), and in NetworkManager.
+for _ in $(seq 1 30); do
+    ls /sys/class/rfkill/*/type 2>/dev/null | xargs -r grep -l wlan >/dev/null && break
+    sleep 1
+done
 rfkill unblock wifi || true
+nmcli radio wifi on || true
 
 [ -f "$FILE" ] || exit 0
 ssid="" password="" country=""
