@@ -110,11 +110,12 @@ cp "$ROOT/opt/phylax-suite/resources/bin/udev/51-trezor.rules" "$ROOT/etc/udev/r
 suite_version=$(basename "$APPIMAGE" | sed -E 's/^PHYLAX-Suite-(.*)-linux-arm64\.AppImage$/\1/')
 
 log "Users"
+echo "accounts in the base image:"; awk -F: '$3 >= 1000 && $3 < 65000 {print "  " $1 " " $3}' "$ROOT/etc/passwd"
 in_root groupadd -f plugdev
 in_root useradd -m -u "$KIOSK_UID" -s /bin/bash -G plugdev,video,render,input,audio "$KIOSK_USER"
 in_root passwd -l "$KIOSK_USER"
 if [ -n "$DEV_USER" ]; then
-    in_root useradd -m -u "$DEV_UID" -s /bin/bash -G sudo,adm,plugdev,netdev,video "$DEV_USER"
+    in_root useradd -m -s /bin/bash -G sudo,adm,plugdev,netdev,video "$DEV_USER"
     echo "$DEV_USER:$DEV_PASSWORD" | in_root chpasswd
 fi
 
@@ -135,7 +136,8 @@ cmd="${cmd% } cfg80211.ieee80211_regdom=$WIFI_COUNTRY"
 echo "$cmd" >"$ROOT/boot/firmware/cmdline.txt"
 echo "cmdline.txt now: $(cat "$ROOT/boot/firmware/cmdline.txt")"
 for unit in userconfig.service rpi-resize.service rpi-resize-swap-file.service \
-    cloud-init.service cloud-init-local.service cloud-config.service cloud-final.service \
+    cloud-init.service cloud-init-local.service cloud-init-main.service cloud-init-network.service \
+    cloud-config.service cloud-final.service cloud-init-hotplugd.socket \
     regenerate_ssh_host_keys.service; do
     in_root systemctl disable "$unit" 2>/dev/null && echo "disabled $unit" || true
 done
