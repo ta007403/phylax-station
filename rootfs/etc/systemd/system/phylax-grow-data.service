@@ -1,0 +1,13 @@
+# PHYLAX station: on the first boot, grow the data partition (the last one) to fill the eMMC.
+[Unit]
+Description=Grow the PHYLAX data partition to fill the disk
+After=data.mount
+Requires=data.mount
+ConditionPathExists=!/data/.grown
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/phylax-grow-data
+
+[Install]
+WantedBy=multi-user.target

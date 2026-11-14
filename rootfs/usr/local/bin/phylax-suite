@@ -1,0 +1,3 @@
+#!/bin/sh
+# PHYLAX station: start PHYLAX Suite (Electron) on Wayland, inside cage.
+exec /opt/phylax-suite/trezor-suite --ozone-platform=wayland "$@"

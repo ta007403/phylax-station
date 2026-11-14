@@ -1,0 +1,39 @@
+#!/bin/bash
+# Wi-Fi radio on, and the network from /boot/firmware/phylax-wifi.txt (written on the PC after
+# flashing): it is saved in NetworkManager (on the data partition), then the password is removed
+# from the file.
+set -u
+FILE=/boot/firmware/phylax-wifi.txt
+rfkill unblock wifi || true
+
+[ -f "$FILE" ] || exit 0
+ssid="" password="" country=""
+while IFS= read -r line || [ -n "$line" ]; do
+    line=${line%$'\r'}         # Windows line ends
+    line=${line#$'\xef\xbb\xbf'} # Windows Notepad's BOM
+    case "$line" in
+        SSID=*) ssid=${line#SSID=} ;;
+        PASSWORD=*) password=${line#PASSWORD=} ;;
+        COUNTRY=*) country=${line#COUNTRY=} ;;
+    esac
+done <"$FILE"
+[ -n "$ssid" ] || exit 0
+
+[ -n "$country" ] && iw reg set "$country" || true
+nmcli connection delete "$ssid" >/dev/null 2>&1 || true
+if [ -n "$password" ]; then
+    nmcli connection add type wifi con-name "$ssid" ssid "$ssid" \
+        wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$password" connection.autoconnect yes
+else
+    nmcli connection add type wifi con-name "$ssid" ssid "$ssid" connection.autoconnect yes
+fi
+nmcli connection up "$ssid" || echo "Wi-Fi \"$ssid\" saved, not connected yet"
+
+# Keep the file as a template, without the password.
+cat >"$FILE" <<EOF
+# PHYLAX station Wi-Fi. "$ssid" was saved on the station; its password was removed from here.
+# To add another network: fill in SSID and PASSWORD, save, start the station.
+SSID=
+PASSWORD=
+COUNTRY=${country:-TH}
+EOF

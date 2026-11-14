@@ -1,0 +1,12 @@
+# PHYLAX station: each station makes its own SSH host keys on its first boot (the image has none).
+[Unit]
+Description=Generate SSH host keys
+Before=ssh.service
+ConditionPathExists=!/etc/ssh/ssh_host_ed25519_key
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ssh-keygen -A
+
+[Install]
+WantedBy=multi-user.target

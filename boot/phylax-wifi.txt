@@ -1,0 +1,5 @@
+# PHYLAX station Wi-Fi. Fill in your network, save, then start the station: it joins this
+# Wi-Fi and removes the password from this file.
+SSID=
+PASSWORD=
+COUNTRY=TH

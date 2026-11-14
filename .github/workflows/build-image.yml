@@ -1,0 +1,65 @@
+# Build the PHYLAX station eMMC image on GitHub's arm64 Linux machine (free for public repos):
+# Raspberry Pi OS Lite 64-bit + the PHYLAX Suite Linux arm64 AppImage from phylax-suite's
+# "[PHYLAX] Build suite-desktop for Linux arm64" workflow.
+name: Build station image
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+    inputs:
+      suite_run_id:
+        description: "phylax-suite workflow run to take the AppImage from (empty: the latest successful one on branch phylax)"
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build the dev image
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q parted e2fsprogs xz-utils dosfstools curl
+
+      - name: PHYLAX Suite AppImage (from phylax-suite)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.suite_run_id }}
+        run: |
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list -R ta007403/phylax-suite --workflow phylax-build-desktop-linux-arm64.yml \
+              --branch phylax --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          [ -n "$RUN_ID" ] || { echo "No successful PHYLAX Suite Linux arm64 build found." >&2; exit 1; }
+          echo "PHYLAX Suite from run https://github.com/ta007403/phylax-suite/actions/runs/$RUN_ID"
+          gh run download "$RUN_ID" -R ta007403/phylax-suite -n phylax-suite-desktop-linux-arm64 -D suite
+          (cd suite && sha256sum -c PHYLAX-Suite-linux-arm64.sha256)
+          chmod +x suite/PHYLAX-Suite*.AppImage
+          ls -la suite
+
+      - name: Build the image
+        run: sudo build/build-image.sh suite/PHYLAX-Suite*.AppImage out
+
+      - name: Upload the image
+        uses: actions/upload-artifact@v4
+        with:
+          name: phylax-station-dev-image
+          path: out/
+          compression-level: 0 # already xz
+          retention-days: 30

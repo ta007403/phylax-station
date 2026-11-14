@@ -1,0 +1,13 @@
+# PHYLAX station: Wi-Fi radio on (country set), and the Wi-Fi from phylax-wifi.txt on the boot
+# partition, if one was written there.
+[Unit]
+Description=PHYLAX Wi-Fi setup
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/phylax-wifi-setup
+
+[Install]
+WantedBy=multi-user.target
