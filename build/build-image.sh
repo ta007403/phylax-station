@@ -146,6 +146,11 @@ for unit in userconfig.service rpi-resize.service rpi-resize-swap-file.service \
     in_root systemctl disable "$unit" 2>/dev/null && echo "disabled $unit" || true
 done
 [ -d "$ROOT/etc/cloud" ] && touch "$ROOT/etc/cloud/cloud-init.disabled"
+echo "what blocks Wi-Fi in the base image:"
+grep -rlE 'rfkill|wifi-country|WirelessEnabled' "$ROOT"/usr/lib/udev/rules.d "$ROOT"/etc/udev/rules.d \
+    "$ROOT"/usr/lib/systemd/system "$ROOT"/etc/systemd/system "$ROOT"/etc/NetworkManager \
+    "$ROOT"/usr/lib/NetworkManager "$ROOT"/var/lib/NetworkManager "$ROOT"/usr/lib/raspberrypi-sys-mods 2>/dev/null |
+    while read -r f; do echo "--- ${f#"$ROOT"}"; grep -nE 'rfkill|wifi-country|WirelessEnabled' "$f" | head -8; done
 # Wi-Fi on: Raspberry Pi OS ships its saved radio state as "Wi-Fi blocked" (lifted by setting a
 # country in raspi-config); systemd-rfkill would restore it at every boot.
 for f in "$ROOT"/var/lib/systemd/rfkill/*wlan; do
