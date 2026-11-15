@@ -15,12 +15,12 @@ keyboard and trackpad, that starts straight into **PHYLAX Suite** with the PHYLA
 
 | | |
 |---|---|
-| Login (console and SSH) | `admin` / `123456`. Change it with `passwd` when you like. |
-| SSH | on: `ssh admin@phylax-station.local` (or the station's IP address) |
+| Login (console only) | `admin` / `123456`, on the station's own screen and keyboard. Change it with `passwd`. |
+| SSH | **none**: the SSH server is removed. Nothing on the network can log in; updates are by re-flashing. |
 | Console | **Ctrl+Alt+F2**, log in; **Ctrl+Alt+F1** back to PHYLAX Suite |
 | Hostname, time zone, keyboard | `phylax-station`, Asia/Bangkok, US |
 
-Production images will have no login and no SSH.
+Production images will have no login at all.
 
 ## Read-only system
 
@@ -31,7 +31,7 @@ can: the data partition (PHYLAX Suite's data, saved Wi-Fi) is still written when
 (ext4: it repairs itself at the next start).
 
 - Kept on the data partition: PHYLAX Suite's data, saved Wi-Fi networks, the station's machine id
-  (its network identity) and SSH host keys.
+  (its network identity), and SSH host keys if an image has SSH (`DEV_SSH=1`).
 - The boot partition is read-only too; it is made writable only to clean up `phylax-wifi.txt`.
 - **Dev:** changes on the station (e.g. `apt install`) are lost at the next start. To keep them:
   `sudo phylax-system-rw on`, `sudo reboot`, make the changes, then `sudo phylax-system-rw off`,

@@ -71,6 +71,10 @@ check "boots to graphical.target" bash -c "readlink '$R/etc/systemd/system/defau
 for s in userconfig rpi-resize cloud-init-main; do
     check "disabled: $s" bash -c "! ls '$R'/etc/systemd/system/*.wants/$s.service 2>/dev/null | grep -q ."
 done
+if [ "$DEV_SSH" != 1 ]; then
+    check "no SSH server (nothing on the network can log in)" bash -c "! test -e '$R/usr/sbin/sshd'"
+    check "no SSH switch file on the boot partition" bash -c "! ls '$B'/ssh '$B'/ssh.txt 2>/dev/null | grep -q ."
+fi
 if [ "$DEV_SSH" = 1 ]; then
     check "enabled: ssh" test -L "$R/etc/systemd/system/multi-user.target.wants/ssh.service"
     check "no SSH host keys in the image (each station makes its own)" bash -c "! ls '$R'/etc/ssh/ssh_host_* 2>/dev/null | grep -q ."
@@ -83,7 +87,9 @@ if [ "$READ_ONLY" = 1 ]; then
     check "overlay set-up installed" test -x "$R/usr/local/sbin/phylax-overlay-init"
     check "its mount point exists" test -d "$R/phylax-overlay"
     check "boot partition read-only" bash -c "grep -E '/boot/firmware' '$R/etc/fstab' | grep -q 'defaults,ro'"
-    check "SSH host keys kept on the data partition" test -L "$R/etc/systemd/system/multi-user.target.wants/phylax-ssh-keys.service"
+    if [ "$DEV_SSH" = 1 ]; then
+        check "SSH host keys kept on the data partition" test -L "$R/etc/systemd/system/multi-user.target.wants/phylax-ssh-keys.service"
+    fi
     check "dev switch phylax-system-rw" test -x "$R/usr/local/sbin/phylax-system-rw"
 fi
 

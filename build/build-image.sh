@@ -92,7 +92,15 @@ for alt in "libgtk-3-0t64 libgtk-3-0" "libasound2t64 libasound2" "libatspi2.0-0t
 done
 # shellcheck disable=SC2086
 in_root apt-get install -y -q --no-install-recommends $pkgs
-[ "$DEV_SSH" = 1 ] && in_root apt-get install -y -q --no-install-recommends openssh-server
+if [ "$DEV_SSH" = 1 ]; then
+    in_root apt-get install -y -q --no-install-recommends openssh-server
+else
+    # Raspberry Pi OS Lite has the SSH server (switched on by a file "ssh" on the boot partition):
+    # removed, so nothing on the network can log in to the station
+    in_root apt-get purge -y -q openssh-server openssh-sftp-server 2>/dev/null || true
+    in_root apt-get autoremove -y -q --purge
+    rm -f "$ROOT/boot/firmware/ssh" "$ROOT/boot/firmware/ssh.txt"
+fi
 in_root apt-get clean
 
 log "PHYLAX Suite"
