@@ -22,6 +22,23 @@ keyboard and trackpad, that starts straight into **PHYLAX Suite** with the PHYLA
 
 Production images will have no login and no SSH.
 
+## Read-only system
+
+The system partition is **read-only**: at start, `phylax-overlay-init` (before systemd) puts a RAM
+layer over it, so everything the running system writes is in RAM and gone at the next start.
+**Pulling the power cannot damage the system.** Shut down from Settings > Station anyway when you
+can: the data partition (PHYLAX Suite's data, saved Wi-Fi) is still written when something changes
+(ext4: it repairs itself at the next start).
+
+- Kept on the data partition: PHYLAX Suite's data, saved Wi-Fi networks, the station's machine id
+  (its network identity) and SSH host keys.
+- The boot partition is read-only too; it is made writable only to clean up `phylax-wifi.txt`.
+- **Dev:** changes on the station (e.g. `apt install`) are lost at the next start. To keep them:
+  `sudo phylax-system-rw on`, `sudo reboot`, make the changes, then `sudo phylax-system-rw off`,
+  `sudo reboot`. `phylax-system-rw` shows the current state.
+- If the RAM layer cannot be set up, the station starts with a writable system instead (a line
+  "phylax-overlay: ..." on the screen at start says why).
+
 ## Settings > Station
 
 In PHYLAX Suite, **Settings > Station** (only on the station): Wi-Fi (scan, connect with a
@@ -79,7 +96,8 @@ Settings (base image, sizes, hostname, dev login) are in `build/config.env`.
 - `build/config.env`: its settings
 - `build/check-image.sh`: checks a built image (partitions, PHYLAX Suite and its libraries,
   services, users, data partition); the GitHub build runs it
-- `rootfs/`: files copied into the system: the kiosk service, the first-boot data partition grow,
-  the Wi-Fi setup, SSH host keys made on each station's first boot
+- `rootfs/`: files copied into the system: the read-only system (`phylax-overlay-init`,
+  `phylax-system-rw`), the kiosk service, the first-boot data partition grow, the Wi-Fi setup, SSH
+  host keys (made on each station's first start, kept on the data partition), the polkit rule
 - `boot/phylax-wifi.txt`: the Wi-Fi file on the boot partition
 - `.github/workflows/build-image.yml`: the GitHub build

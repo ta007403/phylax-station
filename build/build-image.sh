@@ -137,6 +137,11 @@ sed -i -E "s/^XKBLAYOUT=.*/XKBLAYOUT=\"$KEYBOARD_LAYOUT\"/" "$ROOT/etc/default/k
 cmd=$(cat "$ROOT/boot/firmware/cmdline.txt")
 cmd=$(echo "$cmd" | tr ' ' '\n' | grep -vE '^(init=.*firstboot.*|systemd\.run.*|resize)$' | tr '\n' ' ')
 cmd="${cmd% } cfg80211.ieee80211_regdom=$WIFI_COUNTRY"
+# read-only system: the kernel mounts it read-only and starts the overlay set-up before systemd
+if [ "$READ_ONLY" = 1 ]; then
+    cmd=$(echo "$cmd" | tr ' ' '\n' | grep -vxE 'rw|ro|init=.*' | tr '\n' ' ')
+    cmd="${cmd% } ro init=/usr/local/sbin/phylax-overlay-init"
+fi
 echo "$cmd" >"$ROOT/boot/firmware/cmdline.txt"
 echo "cmdline.txt now: $(cat "$ROOT/boot/firmware/cmdline.txt")"
 for unit in userconfig.service rpi-resize.service rpi-resize-swap-file.service \
@@ -194,6 +199,13 @@ LABEL=$DATA_LABEL  /data  ext4  defaults,noatime  0  2
 /data/network  /etc/NetworkManager/system-connections  none  bind,x-systemd.requires-mounts-for=/data  0  0
 EOF
 mkdir -p "$ROOT/data"
+if [ "$READ_ONLY" = 1 ]; then
+    # the RAM layer's mount point (the system partition cannot get it at start)
+    mkdir -p "$ROOT/phylax-overlay"
+    # boot partition read-only too (written only for phylax-wifi.txt and phylax-system-rw)
+    sed -i -E 's#^(\S+\s+/boot/firmware\s+vfat\s+)defaults(\s)#\1defaults,ro\2#' "$ROOT/etc/fstab"
+fi
+echo "fstab:"; grep -v '^#' "$ROOT/etc/fstab"
 
 log "Close"
 rm -f "$ROOT/usr/sbin/policy-rc.d"

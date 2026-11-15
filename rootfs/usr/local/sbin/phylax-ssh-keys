@@ -1,0 +1,10 @@
+#!/bin/sh
+# SSH host keys kept on the data partition: made once (first start), copied in at every start.
+set -eu
+KEEP=/data/ssh
+if ! ls "$KEEP"/etc/ssh/ssh_host_*_key >/dev/null 2>&1; then
+    mkdir -p "$KEEP/etc/ssh"
+    chmod 700 "$KEEP"
+    ssh-keygen -A -f "$KEEP"
+fi
+cp -fp "$KEEP"/etc/ssh/ssh_host_* /etc/ssh/

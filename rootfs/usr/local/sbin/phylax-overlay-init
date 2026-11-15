@@ -1,0 +1,73 @@
+#!/bin/sh
+# PHYLAX station: read-only system. The kernel starts this (cmdline.txt: init=...) instead of
+# systemd. It puts a RAM layer over the system partition, which stays read-only: everything the
+# running system writes goes to RAM and is gone at the next start, so pulling the power cannot
+# damage the system. Then it starts systemd on top.
+#
+# - What must last (PHYLAX Suite's data, saved Wi-Fi, SSH host keys) is on the data partition.
+# - The station's identity (machine id: its network address, its logs) is kept on the data
+#   partition too, copied in here before systemd starts.
+# - "phylax.rw" in cmdline.txt (sudo phylax-system-rw on): no RAM layer, the system is written as
+#   usual (for changes on a dev station).
+# - If anything here fails, the station starts normally (writable) instead of not at all.
+
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+INIT=${PHYLAX_INIT:-/sbin/init}
+OVERLAY=/phylax-overlay
+DATA_LABEL=PHYLAXDATA
+
+log() { echo "phylax-overlay: $*" >/dev/console 2>/dev/null || echo "phylax-overlay: $*"; }
+
+# (the kernel passes no arguments to init that systemd needs: it reads /proc/cmdline itself)
+start_normally() {
+    log "$1: starting with a writable system"
+    mountpoint -q /proc && umount /proc 2>/dev/null
+    mount -o remount,rw / 2>/dev/null
+    exec "$INIT"
+}
+
+mountpoint -q /proc || mount -t proc proc /proc || start_normally "no /proc"
+if grep -qw phylax.rw /proc/cmdline; then
+    start_normally "phylax.rw is set"
+fi
+
+# the RAM layer
+mount -t tmpfs -o mode=0755,size=50% phylax-overlay "$OVERLAY" || start_normally "no RAM layer"
+mkdir -p "$OVERLAY/upper" "$OVERLAY/work" "$OVERLAY/root" || start_normally "no RAM layer"
+mount -t overlay overlay -o "lowerdir=/,upperdir=$OVERLAY/upper,workdir=$OVERLAY/work" \
+    "$OVERLAY/root" || {
+    umount "$OVERLAY"
+    start_normally "no overlay"
+}
+NEW=$OVERLAY/root
+
+# systemd must not remount the system partition (it is read-only underneath)
+awk '$2 != "/"' "$NEW/etc/fstab" >"$NEW/etc/fstab.phylax" && mv "$NEW/etc/fstab.phylax" "$NEW/etc/fstab"
+
+# the station's machine id, kept on the data partition (a new one on the first start)
+mkdir -p "$NEW/run/phylax-data"
+if mount -t ext4 -o noatime "LABEL=$DATA_LABEL" "$NEW/run/phylax-data" 2>/dev/null ||
+    mount -t ext4 -o noatime "$(blkid -L "$DATA_LABEL" 2>/dev/null)" "$NEW/run/phylax-data" 2>/dev/null; then
+    saved="$NEW/run/phylax-data/machine-id"
+    if ! grep -qE '^[0-9a-f]{32}$' "$saved" 2>/dev/null; then
+        tr -d '-' </proc/sys/kernel/random/uuid >"$saved.new" && mv "$saved.new" "$saved"
+    fi
+    cp "$saved" "$NEW/etc/machine-id" 2>/dev/null
+    umount "$NEW/run/phylax-data"
+else
+    log "data partition not found: a new machine id for this start only"
+fi
+rmdir "$NEW/run/phylax-data" 2>/dev/null
+
+# switch to the layered system; the read-only system stays visible at /phylax-ro
+mkdir -p "$NEW/phylax-ro"
+cd "$NEW" || start_normally "overlay not usable"
+pivot_root . phylax-ro || {
+    cd /
+    umount "$NEW" "$OVERLAY" 2>/dev/null
+    start_normally "pivot_root failed"
+}
+mount --move /phylax-ro/proc /proc 2>/dev/null
+mount --move /phylax-ro/dev /dev 2>/dev/null
+log "system is read-only (changes are kept in RAM until the next start)"
+exec chroot . "$INIT" </dev/console >/dev/console 2>&1

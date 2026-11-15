@@ -1,0 +1,28 @@
+#!/bin/sh
+# PHYLAX station (dev): make the system writable for changes, or read-only again.
+#   sudo phylax-system-rw on    # writable after the next start
+#   sudo phylax-system-rw off   # read-only after the next start (the normal state)
+#   phylax-system-rw            # the current state
+set -eu
+CMDLINE=/boot/firmware/cmdline.txt
+now=$(if [ "$(findmnt -n -o FSTYPE /)" = overlay ]; then echo read-only; else echo writable; fi)
+case "${1:-}" in
+    on | off) ;;
+    *)
+        echo "The system is $now now."
+        grep -qw phylax.rw "$CMDLINE" && echo "After the next start: writable." || echo "After the next start: read-only."
+        exit 0
+        ;;
+esac
+[ "$(id -u)" = 0 ] || { echo "Use sudo." >&2; exit 1; }
+mount -o remount,rw /boot/firmware
+trap 'mount -o remount,ro /boot/firmware' EXIT
+line=$(tr ' ' '\n' <"$CMDLINE" | grep -vx 'phylax.rw' | grep -v '^$' | tr '\n' ' ')
+line=${line% }
+[ "$1" = on ] && line="$line phylax.rw"
+echo "$line" >"$CMDLINE.new" && sync && mv "$CMDLINE.new" "$CMDLINE" && sync
+if [ "$1" = on ]; then
+    echo "The system will be writable after the next start: sudo reboot. Afterwards: sudo phylax-system-rw off."
+else
+    echo "The system will be read-only after the next start: sudo reboot."
+fi

@@ -37,7 +37,9 @@ else
 fi
 nmcli connection up "$ssid" || echo "Wi-Fi \"$ssid\" saved, not connected yet"
 
-# Keep the file as a template, without the password.
+# Keep the file as a template, without the password. The boot partition is read-only: writable
+# only for this.
+mount -o remount,rw /boot/firmware 2>/dev/null || true
 cat >"$FILE" <<EOF
 # PHYLAX station Wi-Fi. "$ssid" was saved on the station; its password was removed from here.
 # To add another network: fill in SSID and PASSWORD, save, start the station.
@@ -45,3 +47,5 @@ SSID=
 PASSWORD=
 COUNTRY=${country:-TH}
 EOF
+sync
+mount -o remount,ro /boot/firmware 2>/dev/null || true

@@ -76,6 +76,17 @@ if [ "$DEV_SSH" = 1 ]; then
     check "no SSH host keys in the image (each station makes its own)" bash -c "! ls '$R'/etc/ssh/ssh_host_* 2>/dev/null | grep -q ."
 fi
 
+if [ "$READ_ONLY" = 1 ]; then
+    echo "Read-only system"
+    check "kernel mounts the system read-only" grep -qw ro "$B/cmdline.txt"
+    check "overlay set-up starts before systemd" grep -q 'init=/usr/local/sbin/phylax-overlay-init' "$B/cmdline.txt"
+    check "overlay set-up installed" test -x "$R/usr/local/sbin/phylax-overlay-init"
+    check "its mount point exists" test -d "$R/phylax-overlay"
+    check "boot partition read-only" bash -c "grep -E '/boot/firmware' '$R/etc/fstab' | grep -q 'defaults,ro'"
+    check "SSH host keys kept on the data partition" test -L "$R/etc/systemd/system/multi-user.target.wants/phylax-ssh-keys.service"
+    check "dev switch phylax-system-rw" test -x "$R/usr/local/sbin/phylax-system-rw"
+fi
+
 echo "Users"
 shadow_field() { awk -F: -v u="$1" '$1 == u { print $2 }' "$R/etc/shadow"; }
 check "$KIOSK_USER: id $KIOSK_UID" bash -c "[ \"\$(awk -F: '\$1 == \"$KIOSK_USER\" {print \$3}' '$R/etc/passwd')\" = $KIOSK_UID ]"
