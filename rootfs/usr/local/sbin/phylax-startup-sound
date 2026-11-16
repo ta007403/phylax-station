@@ -1,0 +1,11 @@
+#!/bin/sh
+# Play the PHYLAX start-up sound on the MAX98357A amp (dtoverlay=max98357a in config.txt) as soon
+# as its sound card is there (up to 15 s after this starts). No amp: nothing, quietly.
+SOUND=/usr/share/phylax/startup.wav
+for _ in $(seq 1 75); do
+    card=$(awk '/MAX98357/ { print $1; exit }' /proc/asound/cards 2>/dev/null)
+    [ -n "$card" ] && break
+    sleep 0.2
+done
+[ -n "$card" ] || { echo "no MAX98357A sound card: no start-up sound"; exit 0; }
+exec aplay -q -D "plughw:$card,0" "$SOUND"

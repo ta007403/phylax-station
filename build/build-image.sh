@@ -82,7 +82,7 @@ in_root() { chroot "$ROOT" /usr/bin/env DEBIAN_FRONTEND=noninteractive LC_ALL=C 
 log "Packages: kiosk (cage), PHYLAX Suite's libraries, tools"
 in_root apt-get update -q
 # Electron's libraries; Debian 13 renamed some (t64): take whichever exists.
-pkgs="cage network-manager polkitd cloud-guest-utils iw rfkill fonts-dejavu-core libnss3 libgbm1 libxss1
+pkgs="cage network-manager polkitd alsa-utils cloud-guest-utils iw rfkill fonts-dejavu-core libnss3 libgbm1 libxss1
       libsecret-1-0 libnotify4 libuuid1 xdg-utils libdrm2 libxkbcommon0 libxshmfence1"
 for alt in "libgtk-3-0t64 libgtk-3-0" "libasound2t64 libasound2" "libatspi2.0-0t64 libatspi2.0-0" \
     "libatk-bridge2.0-0t64 libatk-bridge2.0-0" "libcups2t64 libcups2"; do
@@ -178,6 +178,14 @@ log "PHYLAX station files and services"
 cp -a "$REPO/rootfs/." "$ROOT/"
 cp "$REPO/boot/phylax-wifi.txt" "$ROOT/boot/firmware/phylax-wifi.txt"
 sed -i "s/XKB_DEFAULT_LAYOUT=us/XKB_DEFAULT_LAYOUT=$KEYBOARD_LAYOUT/" "$ROOT/etc/systemd/system/phylax-kiosk.service"
+# the speaker's MAX98357A I2S amp (header pins 12 BCLK, 35 LRC, 40 DIN): the start-up sound
+cat >>"$ROOT/boot/firmware/config.txt" <<'EOF'
+
+[all]
+# PHYLAX station: speaker amp MAX98357A on I2S (GPIO 18 BCLK, 19 LRC, 21 DIN)
+dtoverlay=max98357a
+EOF
+in_root systemctl enable phylax-startup-sound.service
 in_root systemctl enable phylax-kiosk.service phylax-grow-data.service phylax-wifi-setup.service \
     NetworkManager.service
 in_root systemctl set-default graphical.target

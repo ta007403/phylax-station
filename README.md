@@ -39,6 +39,25 @@ can: the data partition (PHYLAX Suite's data, saved Wi-Fi) is still written when
 - If the RAM layer cannot be set up, the station starts with a writable system instead (a line
   "phylax-overlay: ..." on the screen at start says why).
 
+## Start-up sound
+
+`assets/PHYLAX_Startup_Sound.mp3`, trimmed and converted to `rootfs/usr/share/phylax/startup.wav`,
+plays once at each start, as early as possible (`phylax-startup-sound`, while the boot text still
+shows), on a 40 mm 4 Ω 3 W speaker through an **Adafruit MAX98357A I2S amp**:
+
+| MAX98357A | 40-pin header | |
+|---|---|---|
+| Vin | pin 2 (or 4) | 5 V |
+| GND | pin 6 | ground |
+| BCLK | pin 12 | GPIO 18 |
+| LRC | pin 35 | GPIO 19 |
+| DIN | pin 40 | GPIO 21 |
+| GAIN, SD | not connected | 9 dB; both channels mixed |
+
+`config.txt` has `dtoverlay=max98357a`. Without the amp, nothing plays (no error). To change the
+sound: replace the MP3 and convert it again with
+`ffmpeg -i assets/PHYLAX_Startup_Sound.mp3 -af "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.02,areverse,silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.15,areverse" -ar 48000 -ac 2 -sample_fmt s16 rootfs/usr/share/phylax/startup.wav`.
+
 ## Settings > Station
 
 In PHYLAX Suite, **Settings > Station** (only on the station): Wi-Fi (scan, connect with a

@@ -62,6 +62,12 @@ check "cage" test -x "$R/usr/bin/cage"
 check "polkit (Settings > Station may manage Wi-Fi and power)" test -x "$R/usr/lib/polkit-1/polkitd"
 check "polkit rule for the kiosk user" grep -q '"phylax"' "$R/etc/polkit-1/rules.d/50-phylax-station.rules"
 
+echo "Start-up sound"
+check "speaker amp in config.txt (dtoverlay=max98357a)" grep -qx 'dtoverlay=max98357a' "$B/config.txt"
+check "the sound" test -s "$R/usr/share/phylax/startup.wav"
+check "aplay" test -x "$R/usr/bin/aplay"
+check "enabled: phylax-startup-sound (early, sysinit)" test -L "$R/etc/systemd/system/sysinit.target.wants/phylax-startup-sound.service"
+
 echo "Services"
 for s in graphical.target.wants/phylax-kiosk.service multi-user.target.wants/phylax-grow-data.service \
     multi-user.target.wants/phylax-wifi-setup.service multi-user.target.wants/NetworkManager.service; do

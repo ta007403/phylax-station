@@ -1,0 +1,15 @@
+# PHYLAX station: the start-up sound, as early as possible (the speaker's MAX98357A I2S amp), once
+# per start. It does not hold up the start: systemd goes on while it plays.
+[Unit]
+Description=PHYLAX start-up sound
+DefaultDependencies=no
+After=systemd-udevd.service
+Wants=systemd-udevd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/phylax-startup-sound
+TimeoutStartSec=30
+
+[Install]
+WantedBy=sysinit.target
