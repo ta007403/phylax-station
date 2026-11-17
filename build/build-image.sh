@@ -118,6 +118,7 @@ cp "$ROOT/opt/phylax-suite/resources/bin/udev/51-trezor.rules" "$ROOT/etc/udev/r
 suite_version=$(basename "$APPIMAGE" | sed -E 's/^PHYLAX-Suite-(.*)-linux-arm64\.AppImage$/\1/')
 
 log "Users"
+echo "image kind: $IMAGE_KIND"
 echo "accounts in the base image:"; awk -F: '$3 >= 1000 && $3 < 65000 {print "  " $1 " " $3}' "$ROOT/etc/passwd"
 in_root groupadd -f plugdev
 in_root useradd -m -u "$KIOSK_UID" -s /bin/bash -G plugdev,video,render,input,audio "$KIOSK_USER"
@@ -193,11 +194,28 @@ if [ "$DEV_SSH" = 1 ]; then
     rm -f "$ROOT"/etc/ssh/ssh_host_*
     in_root systemctl enable ssh.service phylax-ssh-keys.service
 fi
+
+if [ "$IMAGE_KIND" = production ]; then
+    log "Production: no login of any kind"
+    # every account locked (the kiosk user and pi already are): root too
+    in_root passwd -l root
+    # no text consoles: no login prompt on Ctrl+Alt+F2-F6 nor on the serial port
+    for unit in getty@.service autovt@.service serial-getty@.service console-getty.service; do
+        in_root systemctl mask "$unit"
+    done
+    # PHYLAX Suite's kiosk: no switching away to a console
+    sed -i 's#/usr/bin/cage -s -- #/usr/bin/cage -- #' "$ROOT/etc/systemd/system/phylax-kiosk.service"
+    # no serial console on the boot line
+    cmd=$(tr ' ' '\n' <"$ROOT/boot/firmware/cmdline.txt" | grep -v '^console=serial' | tr '\n' ' ')
+    echo "${cmd% }" >"$ROOT/boot/firmware/cmdline.txt"
+    # no "magic SysRq" keyboard shortcuts (kill processes, reboot, ...)
+    echo "kernel.sysrq = 0" >"$ROOT/etc/sysctl.d/90-phylax-station.conf"
+fi
 # station marker: PHYLAX Suite shows the station-only settings when it exists
 image_version="$(date -u +%Y%m%d)-$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo local)"
 cat >"$ROOT/etc/phylax-station-release" <<EOF
 IMAGE_VERSION=$image_version
-IMAGE_KIND=$([ -n "$DEV_USER" ] && echo dev || echo production)
+IMAGE_KIND=$IMAGE_KIND
 SUITE_VERSION=$suite_version
 BASE=$base_name
 EOF
@@ -236,7 +254,7 @@ LOOP=""
 
 mkdir -p "$OUT"
 name="phylax-station-$image_version-dev"
-[ -n "$DEV_USER" ] || name="phylax-station-$image_version"
+[ "$IMAGE_KIND" = production ] && name="phylax-station-$image_version"
 mv "$IMG" "$OUT/$name.img"
 xz -T0 -6 "$OUT/$name.img"
 (cd "$OUT" && sha256sum "$name.img.xz" >"$name.img.xz.sha256")
@@ -244,6 +262,6 @@ cat >"$OUT/build-info.txt" <<EOF
 image:  $name.img.xz
 base:   $url
 suite:  $(basename "$APPIMAGE") ($(sha256sum "$APPIMAGE" | cut -c1-16)...)
-kind:   $([ -n "$DEV_USER" ] && echo "dev (login $DEV_USER, SSH $([ "$DEV_SSH" = 1 ] && echo on || echo off))" || echo production)
+kind:   $([ "$IMAGE_KIND" = production ] && echo "production (no login, no consoles, no SSH)" || echo "dev (console login $DEV_USER, SSH $([ "$DEV_SSH" = 1 ] && echo on || echo off))")
 EOF
 cat "$OUT/build-info.txt"

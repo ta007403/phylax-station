@@ -25,9 +25,19 @@ permissions:
 
 jobs:
   image:
-    name: Build the dev image
+    name: Build the ${{ matrix.kind }} image
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # dev: a console login (admin), for development
+          - kind: dev
+            artifact: phylax-station-dev-image
+          # production: no login of any kind, for real stations
+          - kind: production
+            artifact: phylax-station-image
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,15 +64,15 @@ jobs:
           ls -la suite
 
       - name: Build the image
-        run: sudo build/build-image.sh suite/PHYLAX-Suite*.AppImage out
+        run: sudo IMAGE_KIND=${{ matrix.kind }} build/build-image.sh suite/PHYLAX-Suite*.AppImage out
 
       - name: Check the image
-        run: sudo build/check-image.sh out/*.img.xz
+        run: sudo IMAGE_KIND=${{ matrix.kind }} build/check-image.sh out/*.img.xz
 
       - name: Upload the image
         uses: actions/upload-artifact@v4
         with:
-          name: phylax-station-dev-image
+          name: ${{ matrix.artifact }}
           path: out/
           compression-level: 0 # already xz
           retention-days: 30

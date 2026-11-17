@@ -110,6 +110,20 @@ if [ -n "$DEV_USER" ]; then
     check "$DEV_USER: password set, in sudo" bash -c "[[ '$(shadow_field "$DEV_USER")' == '\$'* ]] && grep -qE '^sudo:.*\b$DEV_USER\b' '$R/etc/group'"
 fi
 
+if [ "$IMAGE_KIND" = production ]; then
+    echo "Production: no way in"
+    # a usable password hash starts with "$"; "!"/"*" = locked; empty = no password at all
+    open_accounts=$(awk -F: '$2 == "" || $2 ~ /^\$/ { print $1 }' "$R/etc/shadow" | tr '\n' ' ')
+    check "no account can log in${open_accounts:+ (open: $open_accounts)}" test -z "$open_accounts"
+    for unit in getty@.service autovt@.service serial-getty@.service console-getty.service; do
+        check "masked: $unit" bash -c "[ \"\$(readlink '$R/etc/systemd/system/$unit')\" = /dev/null ]"
+    done
+    check "kiosk without console switching (cage without -s)" bash -c "grep -q 'ExecStart=/usr/bin/cage -- ' '$R/etc/systemd/system/phylax-kiosk.service'"
+    check "no serial console on the boot line" bash -c "! grep -q 'console=serial' '$B/cmdline.txt'"
+    check "magic SysRq keys off" grep -qx 'kernel.sysrq = 0' "$R/etc/sysctl.d/90-phylax-station.conf"
+    check "release says production" grep -qx 'IMAGE_KIND=production' "$R/etc/phylax-station-release"
+fi
+
 echo "Data partition"
 check "fstab: /data, /home/$KIOSK_USER, saved networks" bash -c "grep -q 'LABEL=$DATA_LABEL' '$R/etc/fstab' && grep -q '/home/$KIOSK_USER' '$R/etc/fstab' && grep -q 'system-connections' '$R/etc/fstab'"
 check "home/$KIOSK_USER owned by $KIOSK_UID" bash -c "[ \"\$(stat -c %u '$D/home/$KIOSK_USER')\" = $KIOSK_UID ]"

@@ -11,16 +11,25 @@ keyboard and trackpad, that starts straight into **PHYLAX Suite** with the PHYLA
 - **Partitions:** boot, system, **data**. The data partition holds PHYLAX Suite's data (settings,
   wallet names) and the saved Wi-Fi networks. On the first boot it grows to fill the eMMC.
 
-## Dev image (now)
+## Two images: production and dev
 
-| | |
-|---|---|
-| Login (console only) | `admin` / `123456`, on the station's own screen and keyboard. Change it with `passwd`. |
-| SSH | **none**: the SSH server is removed. Nothing on the network can log in; updates are by re-flashing. |
-| Console | **Ctrl+Alt+F2**, log in; **Ctrl+Alt+F1** back to PHYLAX Suite |
-| Hostname, time zone, keyboard | `phylax-station`, Asia/Bangkok, US |
+Every build makes both, from the same system:
 
-Production images will have no login at all.
+| | **Production** (`phylax-station-…img.xz`) | **Dev** (`phylax-station-…-dev.img.xz`) |
+|---|---|---|
+| For | real stations | development and testing |
+| Login | **none**: every account is locked | console only: `admin` / `123456` |
+| Consoles | **none**: no login prompt on Ctrl+Alt+F2-F6 nor on the serial port; the kiosk does not switch away | **Ctrl+Alt+F2**, log in; **Ctrl+Alt+F1** back to PHYLAX Suite |
+| SSH | none | none |
+| Magic SysRq keys | off | on |
+| Way in | **re-flash only** | the console |
+
+Both: read-only system, hostname `phylax-station`, time zone Asia/Bangkok, US keyboard. Nothing on
+the network can log in to either; updates are by re-flashing.
+
+On a production station, everything is done in PHYLAX Suite (Wi-Fi, shut down and restart in
+Settings > Station). If it ever needs fixing, re-flash it: that loses only the saved Wi-Fi and
+PHYLAX Suite's settings. The wallets and keys are on the PHYLAX blocks, never on the station.
 
 ## Read-only system
 
@@ -68,8 +77,8 @@ without a password.
 ## Get the image
 
 GitHub → this repo → **Actions** → **Build station image** → the newest green run → artifact
-**phylax-station-dev-image** (a zip with `phylax-station-…-dev.img.xz`, its `.sha256` and
-`build-info.txt`). Unzip it; keep the `.img.xz` as it is.
+**phylax-station-image** (production) or **phylax-station-dev-image** (dev): a zip with the
+`.img.xz`, its `.sha256` and `build-info.txt`. Unzip it; keep the `.img.xz` as it is.
 
 A new image is built on every push to `main`, from the newest successful PHYLAX Suite Linux arm64
 build. To pick another PHYLAX Suite build: **Run workflow** with its run id.
@@ -103,10 +112,12 @@ replaces only the system and keeps the data partition comes with a later image.
 On an arm64 Linux machine (or GitHub's `ubuntu-24.04-arm`), as root:
 
 ```bash
-sudo build/build-image.sh PHYLAX-Suite-<version>-linux-arm64.AppImage out/
+sudo IMAGE_KIND=production build/build-image.sh PHYLAX-Suite-<version>-linux-arm64.AppImage out/
+sudo IMAGE_KIND=production build/check-image.sh out/*.img.xz
 ```
 
-Settings (base image, sizes, hostname, dev login) are in `build/config.env`.
+`IMAGE_KIND=dev` (the default) makes the dev image. Settings (base image, sizes, hostname, dev
+login) are in `build/config.env`.
 
 ## Files
 
