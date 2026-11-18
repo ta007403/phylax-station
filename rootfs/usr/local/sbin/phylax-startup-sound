@@ -8,4 +8,8 @@ for _ in $(seq 1 75); do
     sleep 0.2
 done
 [ -n "$card" ] || { echo "no MAX98357A sound card: no start-up sound"; exit 0; }
+# The card registers before its I2S/DMA is ready to make sound this early in boot (aplay then
+# "succeeds" silently). Let it settle; the sound's own 0.5 s silent lead-in then lets the amp lock
+# onto the clock before the first note. (Playing it by hand after boot already worked.)
+sleep 3
 exec aplay -q -D "plughw:$card,0" "$SOUND"
