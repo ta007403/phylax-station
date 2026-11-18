@@ -50,7 +50,7 @@ can: the data partition (PHYLAX Suite's data, saved Wi-Fi) is still written when
 
 ## Start-up sound
 
-`assets/PHYLAX_Startup_Sound.mp3`, trimmed and converted to `rootfs/usr/share/phylax/startup.wav`,
+`rootfs/usr/share/phylax/startup.wav` (the owner's WAV, 44.1 kHz 16-bit stereo, used as it is)
 plays once at each start, as early as possible (`phylax-startup-sound`, while the boot text still
 shows), on a 40 mm 4 Ω 3 W speaker through an **Adafruit MAX98357A I2S amp**:
 
@@ -64,8 +64,8 @@ shows), on a 40 mm 4 Ω 3 W speaker through an **Adafruit MAX98357A I2S amp**:
 | GAIN, SD | not connected | 9 dB; both channels mixed |
 
 `config.txt` has `dtoverlay=max98357a`. Without the amp, nothing plays (no error). To change the
-sound: replace the MP3 and convert it again with
-`ffmpeg -i assets/PHYLAX_Startup_Sound.mp3 -af "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.02,areverse,silenceremove=start_periods=1:start_threshold=-60dB:start_silence=0.15,areverse" -ar 48000 -ac 2 -sample_fmt s16 rootfs/usr/share/phylax/startup.wav`.
+sound: replace `startup.wav` (any WAV `aplay` plays; keep its peaks a little below full scale, or
+the small speaker distorts).
 
 ## Settings > Station
 
