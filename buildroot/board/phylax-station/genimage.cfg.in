@@ -1,0 +1,30 @@
+# PHYLAX station (Buildroot image): boot (FAT) and system partitions.
+# Milestone 1: the data partition and the read-only system come with milestone 4.
+image boot.vfat {
+	vfat {
+		label = "bootfs"
+		files = {
+#BOOT_FILES#
+		}
+	}
+
+	size = 64M
+}
+
+image sdcard.img {
+	hdimage {
+		# fixed, so cmdline.txt can name the system partition: root=PARTUUID=50485958-02
+		disk-signature = 0x50485958
+	}
+
+	partition boot {
+		partition-type = 0xC
+		bootable = "true"
+		image = "boot.vfat"
+	}
+
+	partition rootfs {
+		partition-type = 0x83
+		image = "rootfs.ext4"
+	}
+}

@@ -1,0 +1,1 @@
+root=PARTUUID=50485958-02 rootfstype=ext4 rootwait console=tty1 console=ttyAMA10,115200 cfg80211.ieee80211_regdom=TH

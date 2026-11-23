@@ -1,0 +1,21 @@
+# PHYLAX station (Buildroot image): Raspberry Pi CM5 boot settings, as Raspberry Pi OS sets them.
+kernel=Image
+arm_64bit=1
+arm_boost=1
+disable_overscan=1
+
+# Screen: the KMS graphics driver (PHYLAX Suite's kiosk needs it), screens found by themselves
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_fw_kms_setup=1
+display_auto_detect=1
+camera_auto_detect=0
+dtparam=audio=on
+
+[cm5]
+# the CM5's USB 2.0 port works as a host (keyboard, trackpad, PHYLAX blocks)
+dtoverlay=dwc2,dr_mode=host
+
+[all]
+# PHYLAX station: speaker amp MAX98357A on I2S (GPIO 18 BCLK, 19 LRC, 21 DIN)
+dtoverlay=max98357a

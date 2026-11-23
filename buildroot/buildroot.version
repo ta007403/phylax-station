@@ -1,0 +1,3 @@
+# The Buildroot release the station image is built with (long-term support), and its commit.
+BUILDROOT_TAG=2026.02.3
+BUILDROOT_COMMIT=679b9ead7620bbf193620d1ebf56f53c1764d37a

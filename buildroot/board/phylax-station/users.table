@@ -1,0 +1,2 @@
+# PHYLAX station (Buildroot image), DEV ONLY: the console login. The production image has none.
+admin -1 admin -1 =123456 /home/admin /bin/sh sudo PHYLAX dev login

@@ -1,0 +1,95 @@
+# Build the PHYLAX station eMMC image with Buildroot (beside the Raspberry Pi OS image of
+# build-image.yml, which stays as it is). x86_64 machine: Buildroot's Bootlin toolchain runs there.
+# Milestone 1: the dev image boots the CM5 to a console.
+name: Build Buildroot image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "buildroot/**"
+      - ".github/workflows/build-buildroot.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build the Buildroot dev image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    env:
+      BR_WORK: /mnt/phylax-br
+      BR2_DL_DIR: /mnt/phylax-br/dl
+      BR2_CCACHE_DIR: /mnt/phylax-br/ccache
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Room and tools
+        run: |
+          # GitHub's preinstalled SDKs we do not use: room for Buildroot's build
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo mkdir -p "$BR_WORK" && sudo chown "$USER" "$BR_WORK"
+          df -h / /mnt
+          sudo apt-get update -q
+          sudo apt-get install -y -q build-essential file wget cpio unzip rsync bc git python3 \
+            libncurses-dev xz-utils jq
+
+      - name: Buildroot release
+        id: br
+        run: |
+          . buildroot/buildroot.version
+          echo "tag=$BUILDROOT_TAG" >>"$GITHUB_OUTPUT"
+
+      - name: Downloads and compiler cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /mnt/phylax-br/dl
+            /mnt/phylax-br/ccache
+          key: br-${{ steps.br.outputs.tag }}-${{ hashFiles('buildroot/configs/*', 'buildroot/package/**') }}-${{ github.run_id }}
+          restore-keys: |
+            br-${{ steps.br.outputs.tag }}-${{ hashFiles('buildroot/configs/*', 'buildroot/package/**') }}-
+            br-${{ steps.br.outputs.tag }}-
+
+      - name: Build the image
+        env:
+          BUILDROOT_SRC: /mnt/phylax-br/buildroot-src
+          PHYLAX_IMAGE_KIND: dev
+        run: |
+          export PHYLAX_IMAGE_VERSION="$(date -u +%Y%m%d)-${GITHUB_SHA::7}"
+          echo "PHYLAX_IMAGE_VERSION=$PHYLAX_IMAGE_VERSION" >>"$GITHUB_ENV"
+          buildroot/build.sh "$BR_WORK/out"
+          df -h /mnt
+
+      - name: Package list (everything in the image, with versions and licences)
+        run: |
+          make -s -C "$BR_WORK/buildroot-src" O="$BR_WORK/out" show-info >"$BR_WORK/show-info.json"
+          mkdir -p out
+          jq -r 'to_entries[] | select(.value.type == "target")
+                 | [.key, .value.version, (.value.licenses // "")] | @tsv' \
+            "$BR_WORK/show-info.json" | sort >"out/phylax-station-br-$PHYLAX_IMAGE_VERSION-packages.tsv"
+          echo "$(wc -l <out/phylax-station-br-$PHYLAX_IMAGE_VERSION-packages.tsv) packages in the image"
+
+      - name: Image
+        run: |
+          name="phylax-station-br-$PHYLAX_IMAGE_VERSION-dev"
+          cp "$BR_WORK/out/images/sdcard.img" "out/$name.img"
+          xz -T0 -6 "out/$name.img"
+          (cd out && sha256sum "$name.img.xz" >"$name.img.xz.sha256")
+          ls -la out
+
+      - name: Upload the image
+        uses: actions/upload-artifact@v4
+        with:
+          name: phylax-station-br-dev-image
+          path: out/
+          compression-level: 0 # already xz
+          retention-days: 30

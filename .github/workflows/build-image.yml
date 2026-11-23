@@ -9,6 +9,9 @@ on:
       - main
     paths-ignore:
       - "**.md"
+      # the Buildroot image has its own workflow (build-buildroot.yml)
+      - "buildroot/**"
+      - ".github/workflows/build-buildroot.yml"
   workflow_dispatch:
     inputs:
       suite_run_id:
