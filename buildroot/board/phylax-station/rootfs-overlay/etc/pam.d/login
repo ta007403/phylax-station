@@ -1,0 +1,13 @@
+# PHYLAX station (Buildroot image): Buildroot's package/linux-pam/login.pam, plus pam_systemd so a
+# login (the console, and the kiosk service's PAMName=login) gets a logind session: cage takes the
+# screen and the input devices through it.
+auth		required	pam_unix.so nullok
+
+account		required	pam_unix.so
+
+password	required	pam_unix.so nullok
+
+session		required	pam_limits.so
+session		required	pam_env.so
+session		required	pam_unix.so
+session		optional	pam_systemd.so

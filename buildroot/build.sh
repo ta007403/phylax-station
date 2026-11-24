@@ -3,7 +3,8 @@
 #
 #   buildroot/build.sh [OUTPUT_DIR]        (default: buildroot-out next to the repo)
 #
-# Environment: PHYLAX_IMAGE_KIND (dev; production comes with milestone 4), PHYLAX_IMAGE_VERSION,
+# Environment: PHYLAX_SUITE_DIR (PHYLAX Suite's AppImage, extracted; required), PHYLAX_SUITE_VERSION,
+# PHYLAX_IMAGE_KIND (dev; production comes with milestone 4), PHYLAX_IMAGE_VERSION,
 # BUILDROOT_SRC (where Buildroot is kept, default: OUTPUT_DIR/../buildroot-src).
 # Needs an x86_64 Linux machine (the Bootlin toolchain is built for it) with Buildroot's usual
 # host tools. The image is OUTPUT_DIR/images/sdcard.img.
@@ -26,6 +27,8 @@ if [ "$actual" != "$BUILDROOT_COMMIT" ]; then
 fi
 echo "Buildroot $BUILDROOT_TAG ($BUILDROOT_COMMIT)"
 
+: "${PHYLAX_SUITE_DIR:?PHYLAX_SUITE_DIR: the folder of PHYLAX Suite, its Linux arm64 AppImage extracted (see README.md)}"
+export PHYLAX_SUITE_DIR="$(realpath "$PHYLAX_SUITE_DIR")"
 export PHYLAX_IMAGE_KIND="${PHYLAX_IMAGE_KIND:-dev}"
 export PHYLAX_IMAGE_VERSION="${PHYLAX_IMAGE_VERSION:-$(date -u +%Y%m%d)-$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo local)}"
 

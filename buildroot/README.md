@@ -13,8 +13,8 @@ Raspberry Pi OS image (the repo's main README), which stays as it is: flash eith
 
 | | Goal | State |
 |---|---|---|
-| 1 | Boots the CM5 to a console: kernel, eMMC, screen (dev image) | **now** |
-| 2 | PHYLAX Suite in the kiosk; keyboard, trackpad; the blocks on USB | |
+| 1 | Boots the CM5 to a console: kernel, eMMC, screen (dev image) | done: boots in 6.2 s |
+| 2 | PHYLAX Suite in the kiosk; keyboard, trackpad; the blocks on USB | **now** |
 | 3 | Settings > Station: Wi-Fi, Ethernet, Shut down / Restart, versions; start-up sound | |
 | 4 | Read-only system with the data partition; production and dev images; image checks | |
 | 5 | Compared with the Raspberry Pi OS image: boot time, size, packages | |
@@ -23,19 +23,26 @@ Raspberry Pi OS image (the repo's main README), which stays as it is: flash eith
 
 GitHub → this repo → **Actions** → **Build Buildroot image** → the newest green run → artifact
 **phylax-station-br-dev-image**: `phylax-station-br-…-dev.img.xz`, its `.sha256`, and
-`…-packages.tsv` (every package in the image: name, version, licence). Flash it as in the main
+`…-packages.tsv` (every package in the image: name, version, licence). PHYLAX Suite is the newest
+successful "[PHYLAX] Build suite-desktop for Linux arm64" run of phylax-suite (another run: start the
+workflow by hand with its run id), as for the Raspberry Pi OS image. Flash it as in the main
 README (rpiboot, Raspberry Pi Imager). The first build takes a few hours; later ones reuse the
 downloads and the compiler cache.
 
-## Milestone 1: what to check on the station
+## Milestone 2: what to check on the station
 
-Dev login on the screen: `admin` / `123456` (`sudo` works). There is no PHYLAX Suite yet.
+1. After the start, PHYLAX Suite fills the 7" screen by itself (no login).
+2. The trackpad moves the pointer and clicks; the keyboard types (e.g. in a search field).
+3. A PHYLAX block on USB: Suite finds it, as on the Raspberry Pi OS image.
+4. Ctrl+Alt+F2: the console login (`admin` / `123456`); there, `systemd-analyze` and
+   `cat /etc/phylax-station-release` (now with `SUITE_VERSION`).
 
-1. It starts, and the boot text and then the login prompt show on the 7" screen.
-2. Log in. `cat /etc/phylax-station-release` shows `BASE=Buildroot …`.
-3. `systemd-analyze` shows how long the start took (the first number to compare later).
-4. `lsusb` or `ls /dev/input`: the keyboard and the trackpad are there, and
-   the keyboard types.
-5. `df -h /` and `mount | grep ' / '`: the system partition is on the eMMC.
+Not yet (milestone 3): Wi-Fi / Ethernet, Settings > Station's Shut down / Restart, the start-up
+sound.
 
-Build it yourself (x86_64 Linux with Buildroot's host tools): `buildroot/build.sh [OUTPUT_DIR]`.
+Milestone 1 (passed): the boot text and console login on the screen, `systemd-analyze`
+(2.7 s kernel + 3.5 s system), the keyboard and trackpad, the system partition on the eMMC.
+
+Build it yourself (x86_64 Linux with Buildroot's host tools): extract PHYLAX Suite's Linux arm64
+AppImage (as the workflow does, `unsquashfs -o <offset>`), then
+`PHYLAX_SUITE_DIR=<extracted folder> buildroot/build.sh [OUTPUT_DIR]`.

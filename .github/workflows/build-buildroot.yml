@@ -1,6 +1,6 @@
 # Build the PHYLAX station eMMC image with Buildroot (beside the Raspberry Pi OS image of
 # build-image.yml, which stays as it is). x86_64 machine: Buildroot's Bootlin toolchain runs there.
-# Milestone 1: the dev image boots the CM5 to a console.
+# Milestone 2: the dev image starts PHYLAX Suite in the kiosk.
 name: Build Buildroot image
 
 on:
@@ -11,6 +11,11 @@ on:
       - "buildroot/**"
       - ".github/workflows/build-buildroot.yml"
   workflow_dispatch:
+    inputs:
+      suite_run_id:
+        description: "phylax-suite workflow run to take the AppImage from (empty: the latest successful one on branch phylax)"
+        required: false
+        default: ""
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,7 +45,31 @@ jobs:
           df -h / /mnt
           sudo apt-get update -q
           sudo apt-get install -y -q build-essential file wget cpio unzip rsync bc git python3 \
-            libncurses-dev xz-utils jq
+            libncurses-dev xz-utils jq squashfs-tools
+
+      - name: PHYLAX Suite (from phylax-suite, as the Raspberry Pi OS image)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.suite_run_id }}
+        run: |
+          if [ -z "$RUN_ID" ]; then
+            RUN_ID=$(gh run list -R ta007403/phylax-suite --workflow phylax-build-desktop-linux-arm64.yml \
+              --branch phylax --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          [ -n "$RUN_ID" ] || { echo "No successful PHYLAX Suite Linux arm64 build found." >&2; exit 1; }
+          echo "PHYLAX Suite from run https://github.com/ta007403/phylax-suite/actions/runs/$RUN_ID"
+          gh run download "$RUN_ID" -R ta007403/phylax-suite -n phylax-suite-desktop-linux-arm64 -D suite
+          (cd suite && sha256sum -c PHYLAX-Suite-linux-arm64.sha256)
+          appimage=$(ls suite/PHYLAX-Suite*.AppImage)
+          # an arm64 AppImage cannot run here (x86_64): its files are a squashfs after the ELF runtime
+          offset=$(python3 -c 'import struct,sys
+          h=open(sys.argv[1],"rb").read(64)
+          shoff,=struct.unpack_from("<Q",h,0x28); size,num=struct.unpack_from("<HH",h,0x3A)
+          print(shoff+size*num)' "$appimage")
+          unsquashfs -q -n -d "$BR_WORK/phylax-suite" -o "$offset" "$appimage"
+          ls "$BR_WORK/phylax-suite"
+          echo "PHYLAX_SUITE_DIR=$BR_WORK/phylax-suite" >>"$GITHUB_ENV"
+          echo "PHYLAX_SUITE_VERSION=$(basename "$appimage" | sed -E 's/^PHYLAX-Suite-(.*)-linux-arm64\.AppImage$/\1/')" >>"$GITHUB_ENV"
 
       - name: Buildroot release
         id: br

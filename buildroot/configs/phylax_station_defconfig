@@ -1,4 +1,4 @@
-# PHYLAX station, Buildroot image - milestone 1: boots the CM5 to a console (dev).
+# PHYLAX station, Buildroot image - milestone 2: PHYLAX Suite in the kiosk (dev).
 # Based on Buildroot's raspberrypicm5io_defconfig.
 
 # CPU and toolchain: glibc (PHYLAX Suite / Electron needs it), prebuilt by Bootlin
@@ -24,6 +24,11 @@ BR2_TARGET_LOCALTIME="Asia/Bangkok"
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/users.table"
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/post-build.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/post-image.sh"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/rootfs-overlay"
+BR2_GENERATE_LOCALE="en_US.UTF-8"
+# logins get a logind session (pam_systemd): the kiosk's cage takes the screen and input through it
+BR2_PACKAGE_SYSTEMD_LOGIND=y
+BR2_PACKAGE_LINUX_PAM=y
 
 # Kernel: Raspberry Pi's, as pinned by Buildroot for the CM5; every CM5 device tree (the firmware
 # picks the one for the module), so it is not tied to the CM5 IO board
@@ -50,10 +55,45 @@ BR2_PACKAGE_KMOD_TOOLS=y
 BR2_PACKAGE_SUDO=y
 BR2_PACKAGE_USBUTILS=y
 
+# Milestone 2: the kiosk. Graphics: Mesa's drivers for the CM5's GPU (V3D renders, VC4 shows).
+BR2_PACKAGE_MESA3D=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_V3D=y
+BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_VC4=y
+BR2_PACKAGE_MESA3D_GBM=y
+BR2_PACKAGE_MESA3D_OPENGL_EGL=y
+BR2_PACKAGE_MESA3D_OPENGL_ES=y
+# cage: the kiosk compositor (Wayland), as on the Raspberry Pi OS image
+BR2_PACKAGE_CAGE=y
+# PHYLAX Suite (Electron): the libraries it is linked with. Electron runs on Wayland, but its
+# program is also linked with these X11 client libraries (no X server is built).
+BR2_PACKAGE_XORG7=y
+BR2_PACKAGE_LIBXCB=y
+BR2_PACKAGE_XLIB_LIBX11=y
+BR2_PACKAGE_XLIB_LIBXCOMPOSITE=y
+BR2_PACKAGE_XLIB_LIBXDAMAGE=y
+BR2_PACKAGE_XLIB_LIBXEXT=y
+BR2_PACKAGE_XLIB_LIBXFIXES=y
+BR2_PACKAGE_XLIB_LIBXRANDR=y
+BR2_PACKAGE_LIBGTK3=y
+BR2_PACKAGE_LIBGTK3_WAYLAND=y
+BR2_PACKAGE_AT_SPI2_CORE=y
+BR2_PACKAGE_LIBNSS=y
+BR2_PACKAGE_CUPS=y
+BR2_PACKAGE_LIBSECRET=y
+BR2_PACKAGE_ALSA_LIB=y
+BR2_PACKAGE_LIBDRM=y
+BR2_PACKAGE_LIBXKBCOMMON=y
+BR2_PACKAGE_EXPAT=y
+BR2_PACKAGE_UTIL_LINUX=y
+BR2_PACKAGE_UTIL_LINUX_LIBUUID=y
+# fonts: as the Raspberry Pi OS image (fonts-dejavu-core)
+BR2_PACKAGE_DEJAVU=y
+BR2_PACKAGE_FONTCONFIG=y
+
 # System partition
 BR2_TARGET_ROOTFS_EXT2=y
 BR2_TARGET_ROOTFS_EXT2_4=y
-BR2_TARGET_ROOTFS_EXT2_SIZE="512M"
+BR2_TARGET_ROOTFS_EXT2_SIZE="1536M"
 # BR2_TARGET_ROOTFS_TAR is not set
 
 # Host tools for the image
