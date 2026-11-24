@@ -1,0 +1,9 @@
+# PHYLAX station, Buildroot image: what the dev image adds to configs/phylax_station_defconfig
+# (the production image). build.sh puts them together for PHYLAX_IMAGE_KIND=dev.
+
+# the console user admin (Ctrl+Alt+F2), with sudo
+BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/users.table $(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/users-dev.table"
+BR2_PACKAGE_SUDO=y
+# looking around on the console: lsusb, nmtui
+BR2_PACKAGE_USBUTILS=y
+BR2_PACKAGE_NETWORK_MANAGER_TUI=y

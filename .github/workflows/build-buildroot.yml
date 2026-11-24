@@ -1,6 +1,6 @@
 # Build the PHYLAX station eMMC image with Buildroot (beside the Raspberry Pi OS image of
 # build-image.yml, which stays as it is). x86_64 machine: Buildroot's Bootlin toolchain runs there.
-# Milestone 2: the dev image starts PHYLAX Suite in the kiosk.
+# Two images, as the Raspberry Pi OS build: dev (console login) and production (no login at all).
 name: Build Buildroot image
 
 on:
@@ -26,7 +26,11 @@ permissions:
 
 jobs:
   image:
-    name: Build the Buildroot dev image
+    name: Build the Buildroot ${{ matrix.kind }} image
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [dev, production]
     runs-on: ubuntu-24.04
     timeout-minutes: 350
     env:
@@ -44,7 +48,7 @@ jobs:
           sudo mkdir -p "$BR_WORK" && sudo chown "$USER" "$BR_WORK"
           df -h / /mnt
           sudo apt-get update -q
-          sudo apt-get install -y -q build-essential file wget cpio unzip rsync bc git python3 \
+          sudo apt-get install -y -q build-essential fdisk file wget cpio unzip rsync bc git python3 \
             libncurses-dev xz-utils jq squashfs-tools
 
       - name: PHYLAX Suite (from phylax-suite, as the Raspberry Pi OS image)
@@ -83,15 +87,15 @@ jobs:
           path: |
             /mnt/phylax-br/dl
             /mnt/phylax-br/ccache
-          key: br-${{ steps.br.outputs.tag }}-${{ hashFiles('buildroot/configs/*', 'buildroot/package/**') }}-${{ github.run_id }}
+          key: br-${{ steps.br.outputs.tag }}-${{ matrix.kind }}-${{ hashFiles('buildroot/configs/*', 'buildroot/board/phylax-station/dev.fragment', 'buildroot/package/**') }}-${{ github.run_id }}
           restore-keys: |
-            br-${{ steps.br.outputs.tag }}-${{ hashFiles('buildroot/configs/*', 'buildroot/package/**') }}-
+            br-${{ steps.br.outputs.tag }}-${{ matrix.kind }}-
             br-${{ steps.br.outputs.tag }}-
 
       - name: Build the image
         env:
           BUILDROOT_SRC: /mnt/phylax-br/buildroot-src
-          PHYLAX_IMAGE_KIND: dev
+          PHYLAX_IMAGE_KIND: ${{ matrix.kind }}
         run: |
           export PHYLAX_IMAGE_VERSION="$(date -u +%Y%m%d)-${GITHUB_SHA::7}"
           echo "PHYLAX_IMAGE_VERSION=$PHYLAX_IMAGE_VERSION" >>"$GITHUB_ENV"
@@ -109,16 +113,24 @@ jobs:
 
       - name: Image
         run: |
-          name="phylax-station-br-$PHYLAX_IMAGE_VERSION-dev"
+          name="phylax-station-br-$PHYLAX_IMAGE_VERSION"
+          [ "${{ matrix.kind }}" = production ] || name="$name-${{ matrix.kind }}"
+          echo "IMAGE_NAME=$name" >>"$GITHUB_ENV"
           cp "$BR_WORK/out/images/sdcard.img" "out/$name.img"
-          xz -T0 -6 "out/$name.img"
-          (cd out && sha256sum "$name.img.xz" >"$name.img.xz.sha256")
+
+      - name: Check the image
+        run: sudo buildroot/check-image.sh "out/$IMAGE_NAME.img" ${{ matrix.kind }}
+
+      - name: Compress
+        run: |
+          xz -T0 -6 "out/$IMAGE_NAME.img"
+          (cd out && sha256sum "$IMAGE_NAME.img.xz" >"$IMAGE_NAME.img.xz.sha256")
           ls -la out
 
       - name: Upload the image
         uses: actions/upload-artifact@v4
         with:
-          name: phylax-station-br-dev-image
+          name: ${{ matrix.kind == 'production' && 'phylax-station-br-image' || 'phylax-station-br-dev-image' }}
           path: out/
           compression-level: 0 # already xz
           retention-days: 30

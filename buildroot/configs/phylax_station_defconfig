@@ -1,4 +1,5 @@
-# PHYLAX station, Buildroot image - milestone 3: Wi-Fi, Ethernet, shut down / restart, sound (dev).
+# PHYLAX station, Buildroot image: the production image (no login of any kind).
+# The dev image is this plus board/phylax-station/dev.fragment (build.sh puts them together).
 # Based on Buildroot's raspberrypicm5io_defconfig.
 
 # CPU and toolchain: glibc (PHYLAX Suite / Electron needs it), prebuilt by Bootlin
@@ -19,7 +20,7 @@ BR2_PACKAGE_SYSTEMD_ANALYZE=y
 BR2_TARGET_GENERIC_GETTY_PORT="tty1"
 BR2_TARGET_TZ_INFO=y
 BR2_TARGET_LOCALTIME="Asia/Bangkok"
-# root cannot log in; dev image: the console user admin (sudo)
+# root cannot log in (the dev image adds the console user admin)
 # BR2_TARGET_ENABLE_ROOT_LOGIN is not set
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/users.table"
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/post-build.sh"
@@ -48,13 +49,11 @@ BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-s
 BR2_PACKAGE_RPI_FIRMWARE_CMDLINE_FILE="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/cmdline.txt"
 BR2_PACKAGE_RPI_FIRMWARE_INSTALL_DTB_OVERLAYS=y
 
-# Packages (milestone 1: only what boots and lets us look around)
+# Packages (milestone 1: what boots; modprobe also loads the RAM layer's overlay module)
 BR2_PACKAGE_BUSYBOX_SHOW_OTHERS=y
 BR2_PACKAGE_XZ=y
 BR2_PACKAGE_KMOD=y
 BR2_PACKAGE_KMOD_TOOLS=y
-BR2_PACKAGE_SUDO=y
-BR2_PACKAGE_USBUTILS=y
 
 # Milestone 2: the kiosk. Graphics: Mesa's drivers for the CM5's GPU (V3D renders, VC4 shows).
 BR2_PACKAGE_MESA3D=y
@@ -99,7 +98,6 @@ BR2_PACKAGE_FONTCONFIG=y
 # BR2_PACKAGE_IFUPDOWN_SCRIPTS is not set
 BR2_PACKAGE_NETWORK_MANAGER=y
 BR2_PACKAGE_NETWORK_MANAGER_CLI=y
-BR2_PACKAGE_NETWORK_MANAGER_TUI=y
 BR2_PACKAGE_WPA_SUPPLICANT=y
 BR2_PACKAGE_WPA_SUPPLICANT_DBUS=y
 BR2_PACKAGE_WPA_SUPPLICANT_WPA3=y
@@ -117,6 +115,13 @@ BR2_PACKAGE_SYSTEMD_POLKIT=y
 BR2_PACKAGE_BASH=y
 BR2_PACKAGE_ALSA_UTILS=y
 BR2_PACKAGE_ALSA_UTILS_APLAY=y
+
+# Milestone 4: read-only system with the data partition, as on the Raspberry Pi OS image
+# (phylax-overlay-init: LABEL= mounts; phylax-grow-data: findmnt, lsblk, sfdisk, partx, resize2fs)
+BR2_PACKAGE_UTIL_LINUX_BINARIES=y
+BR2_PACKAGE_UTIL_LINUX_PARTX=y
+BR2_PACKAGE_E2FSPROGS=y
+BR2_PACKAGE_E2FSPROGS_RESIZE2FS=y
 
 # System partition
 BR2_TARGET_ROOTFS_EXT2=y

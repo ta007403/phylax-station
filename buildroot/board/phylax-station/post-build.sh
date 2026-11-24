@@ -1,9 +1,14 @@
 #!/bin/sh
 # PHYLAX station (Buildroot image): last touches to the system before it is packed.
 #
-# Environment: PHYLAX_SUITE_DIR (PHYLAX Suite's Linux arm64 AppImage, extracted: see
-# buildroot/README.md), PHYLAX_SUITE_VERSION, PHYLAX_IMAGE_VERSION, PHYLAX_IMAGE_KIND.
+# Environment: PHYLAX_IMAGE_KIND (dev or production), PHYLAX_SUITE_DIR (PHYLAX Suite's Linux arm64
+# AppImage, extracted: see buildroot/README.md), PHYLAX_SUITE_VERSION, PHYLAX_IMAGE_VERSION.
 set -eu
+
+case "${PHYLAX_IMAGE_KIND:-}" in
+    dev | production) ;;
+    *) echo "PHYLAX_IMAGE_KIND must be dev or production" >&2; exit 1 ;;
+esac
 
 REPO="$(dirname "$BR2_EXTERNAL_PHYLAX_PATH")"
 
@@ -59,31 +64,58 @@ if ls "${TARGET_DIR}"/usr/lib/systemd/system/cups* "${TARGET_DIR}/usr/sbin/cupsd
 fi
 
 # The station's files shared with the Raspberry Pi OS image (the repo's rootfs/): Wi-Fi from
-# phylax-wifi.txt, the start-up sound, who may manage Wi-Fi and shut down (polkit)
-for f in usr/local/sbin/phylax-wifi-setup usr/local/sbin/phylax-startup-sound; do
+# phylax-wifi.txt, the start-up sound, who may manage Wi-Fi and shut down (polkit), the kiosk; the
+# read-only system with the data partition (phylax-overlay-init, phylax-grow-data, phylax-system-rw)
+for f in usr/local/sbin/phylax-wifi-setup usr/local/sbin/phylax-startup-sound \
+    usr/local/sbin/phylax-overlay-init usr/local/sbin/phylax-grow-data usr/local/sbin/phylax-system-rw; do
     install -D -m 0755 "$REPO/rootfs/$f" "${TARGET_DIR}/$f"
 done
 for f in etc/systemd/system/phylax-wifi-setup.service etc/systemd/system/phylax-startup-sound.service \
+    etc/systemd/system/phylax-kiosk.service etc/systemd/system/phylax-grow-data.service \
     etc/polkit-1/rules.d/50-phylax-station.rules usr/share/phylax/startup.wav; do
     install -D -m 0644 "$REPO/rootfs/$f" "${TARGET_DIR}/$f"
 done
 
-# the boot partition (phylax-wifi.txt), as on Raspberry Pi OS
-mkdir -p "${TARGET_DIR}/boot/firmware"
-grep -q ' /boot/firmware ' "${TARGET_DIR}/etc/fstab" ||
-    echo 'PARTUUID=50485958-01 /boot/firmware vfat defaults,noatime 0 2' >>"${TARGET_DIR}/etc/fstab"
+# The partitions, as on the Raspberry Pi OS image: the boot partition (phylax-wifi.txt) read-only
+# (written only by phylax-wifi-setup and phylax-system-rw); the data partition (made by
+# post-image.sh) with the kiosk user's home (PHYLAX Suite's data) and the saved networks. The
+# system partition is read-only through phylax-overlay-init (cmdline.txt), its RAM layer's mount
+# point /phylax-overlay.
+mkdir -p "${TARGET_DIR}/boot/firmware" "${TARGET_DIR}/data" "${TARGET_DIR}/phylax-overlay"
+sed -i '/# PHYLAX station partitions/,$d' "${TARGET_DIR}/etc/fstab"
+cat >>"${TARGET_DIR}/etc/fstab" <<'FSTAB'
+# PHYLAX station partitions
+PARTUUID=50485958-01  /boot/firmware  vfat  defaults,ro,noatime  0  2
+LABEL=PHYLAXDATA  /data  ext4  defaults,noatime  0  2
+/data/home/phylax  /home/phylax  none  bind,x-systemd.requires-mounts-for=/data  0  0
+/data/network  /etc/NetworkManager/system-connections  none  bind,x-systemd.requires-mounts-for=/data  0  0
+FSTAB
 
 # The services at start; the start goes on to the graphical target (the kiosk)
 systemctl_target() { "${HOST_DIR}/bin/systemctl" --root="${TARGET_DIR}" "$@"; }
-systemctl_target enable phylax-kiosk.service phylax-startup-sound.service \
+systemctl_target enable phylax-kiosk.service phylax-startup-sound.service phylax-grow-data.service \
     phylax-wifi-setup.service NetworkManager.service systemd-timesyncd.service
 systemctl_target set-default graphical.target
+
+# Production: no login of any kind, as the Raspberry Pi OS image's production image (root and the
+# kiosk user are locked; there is no other user)
+rm -f "${TARGET_DIR}/etc/sysctl.d/90-phylax-station.conf"
+if [ "$PHYLAX_IMAGE_KIND" = production ]; then
+    # no text consoles: no login prompt on Ctrl+Alt+F2-F6 nor on the serial port
+    systemctl_target mask getty@.service autovt@.service serial-getty@.service console-getty.service
+    # PHYLAX Suite's kiosk: no switching away to a console
+    sed -i 's#/usr/bin/cage -s -- #/usr/bin/cage -- #' "${TARGET_DIR}/etc/systemd/system/phylax-kiosk.service"
+    grep -q 'ExecStart=/usr/bin/cage -- ' "${TARGET_DIR}/etc/systemd/system/phylax-kiosk.service"
+    # no "magic SysRq" keyboard shortcuts (kill processes, reboot, ...)
+    mkdir -p "${TARGET_DIR}/etc/sysctl.d"
+    echo "kernel.sysrq = 0" >"${TARGET_DIR}/etc/sysctl.d/90-phylax-station.conf"
+fi
 
 # station marker and versions (PHYLAX Suite's Settings > Station reads this file)
 BR_VERSION=$(sed -n 's/^BUILDROOT_TAG=//p' "${BR2_EXTERNAL_PHYLAX_PATH}/buildroot.version")
 cat > "${TARGET_DIR}/etc/phylax-station-release" <<REL
 IMAGE_VERSION=${PHYLAX_IMAGE_VERSION:-local}
-IMAGE_KIND=${PHYLAX_IMAGE_KIND:-dev}
+IMAGE_KIND=${PHYLAX_IMAGE_KIND}
 SUITE_VERSION=${PHYLAX_SUITE_VERSION:-unknown}
 BASE=Buildroot ${BR_VERSION}
 REL

@@ -5,7 +5,14 @@ set -eu
 dev=$(findmnt -n -o SOURCE /data)
 disk=/dev/$(lsblk -n -o PKNAME "$dev")
 part=$(cat "/sys/class/block/$(basename "$dev")/partition")
-growpart "$disk" "$part" || true # "NOCHANGE" when it already fills the disk
+if command -v growpart >/dev/null; then
+    growpart "$disk" "$part" || true # "NOCHANGE" when it already fills the disk
+else
+    # (the Buildroot image has no growpart: the partition table with sfdisk, then the kernel's
+    # view of the mounted partition with partx)
+    echo ", +" | sfdisk --no-reread --no-tell-kernel -N "$part" "$disk"
+    partx -u -n "$part" "$disk"
+fi
 resize2fs "$dev"
 touch /data/.grown
 echo "data partition $dev: $(df -h --output=size /data | tail -1)"

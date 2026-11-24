@@ -1,0 +1,3 @@
+# PHYLAX station (Buildroot image), DEV IMAGE ONLY: the console login (sudo; reads every log).
+# The production image has no login of any kind.
+admin -1 admin -1 =123456 /home/admin /bin/sh sudo,systemd-journal PHYLAX dev login

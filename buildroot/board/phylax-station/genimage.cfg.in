@@ -1,5 +1,6 @@
 # PHYLAX station (Buildroot image): boot (FAT) and system partitions.
-# Milestone 1: the data partition and the read-only system come with milestone 4.
+# The system partition is read-only on the station (phylax-overlay-init); the data partition is
+# last, so it can grow to fill the eMMC at the first start (phylax-grow-data).
 image boot.vfat {
 	vfat {
 		label = "bootfs"
@@ -26,5 +27,10 @@ image sdcard.img {
 	partition rootfs {
 		partition-type = 0x83
 		image = "rootfs.ext4"
+	}
+
+	partition data {
+		partition-type = 0x83
+		image = "data.ext4"
 	}
 }
