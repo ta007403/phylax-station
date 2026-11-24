@@ -40,6 +40,8 @@ for elf in "${TARGET_DIR}/opt/phylax-suite/trezor-suite" "${TARGET_DIR}"/opt/phy
 done
 [ "$missing" = 0 ] || exit 1
 echo "PHYLAX Suite: every library it needs is in the image"
+# the keyboard layouts cage and Suite load (libxkbcommon)
+[ -f "${TARGET_DIR}/usr/share/X11/xkb/rules/evdev" ] || { echo "No keyboard layouts (/usr/share/X11/xkb)" >&2; exit 1; }
 
 # the kiosk at start; the start goes on to the graphical target
 mkdir -p "${TARGET_DIR}/etc/systemd/system/graphical.target.wants"
