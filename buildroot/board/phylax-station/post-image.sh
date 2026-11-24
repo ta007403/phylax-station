@@ -13,6 +13,9 @@ for i in "${BINARIES_DIR}"/*.dtb "${BINARIES_DIR}"/rpi-firmware/*; do
 done
 KERNEL=$(sed -n 's/^kernel=//p' "${BINARIES_DIR}/rpi-firmware/config.txt")
 FILES+=( "${KERNEL}" )
+# the Wi-Fi file the owner fills in on the PC after flashing (the repo's boot/, as Raspberry Pi OS)
+cp "${BR2_EXTERNAL_PHYLAX_PATH}/../boot/phylax-wifi.txt" "${BINARIES_DIR}/phylax-wifi.txt"
+FILES+=( "phylax-wifi.txt" )
 BOOT_FILES=$(printf '\\t\\t\\t"%s",\\n' "${FILES[@]}")
 sed "s|#BOOT_FILES#|${BOOT_FILES}|" "${BOARD_DIR}/genimage.cfg.in" > "${GENIMAGE_CFG}"
 

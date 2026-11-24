@@ -14,8 +14,8 @@ Raspberry Pi OS image (the repo's main README), which stays as it is: flash eith
 | | Goal | State |
 |---|---|---|
 | 1 | Boots the CM5 to a console: kernel, eMMC, screen (dev image) | done: boots in 6.2 s |
-| 2 | PHYLAX Suite in the kiosk; keyboard, trackpad; the blocks on USB | **now** |
-| 3 | Settings > Station: Wi-Fi, Ethernet, Shut down / Restart, versions; start-up sound | |
+| 2 | PHYLAX Suite in the kiosk; keyboard, trackpad; the blocks on USB | done: boots in 6.8 s |
+| 3 | Settings > Station: Wi-Fi, Ethernet, Shut down / Restart, versions; start-up sound | **now** |
 | 4 | Read-only system with the data partition; production and dev images; image checks | |
 | 5 | Compared with the Raspberry Pi OS image: boot time, size, packages | |
 
@@ -29,16 +29,19 @@ workflow by hand with its run id), as for the Raspberry Pi OS image. Flash it as
 README (rpiboot, Raspberry Pi Imager). The first build takes a few hours; later ones reuse the
 downloads and the compiler cache.
 
-## Milestone 2: what to check on the station
+## Milestone 3: what to check on the station
 
-1. After the start, PHYLAX Suite fills the 7" screen by itself (no login).
-2. The trackpad moves the pointer and clicks; the keyboard types (e.g. in a search field).
-3. A PHYLAX block on USB: Suite finds it, as on the Raspberry Pi OS image.
-4. Ctrl+Alt+F2: the console login (`admin` / `123456`); there, `systemd-analyze` and
-   `cat /etc/phylax-station-release` (now with `SUITE_VERSION`).
+1. The start-up sound plays while the station starts.
+2. Ethernet: with a cable, Settings > Station shows it connected.
+3. Wi-Fi in Settings > Station: the list of networks, connect with a password, forget a network.
+4. Wi-Fi from the boot partition: after flashing, fill in `phylax-wifi.txt` on the PC; at the
+   start the station joins it and the password is removed from the file.
+5. Settings > Station shows the versions (image, PHYLAX Suite, `BASE=Buildroot …`).
+6. Shut down and Restart from Settings > Station.
+7. Ctrl+Alt+F2, `admin` / `123456`: `systemd-analyze`; `nmtui` manages networks there too.
 
-Not yet (milestone 3): Wi-Fi / Ethernet, Settings > Station's Shut down / Restart, the start-up
-sound.
+Milestone 2 (passed): PHYLAX Suite starts by itself in the kiosk; keyboard, trackpad and every
+PHYLAX block work; 6.8 s from power to the system's start.
 
 Milestone 1 (passed): the boot text and console login on the screen, `systemd-analyze`
 (2.7 s kernel + 3.5 s system), the keyboard and trackpad, the system partition on the eMMC.

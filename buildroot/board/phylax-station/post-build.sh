@@ -43,11 +43,26 @@ echo "PHYLAX Suite: every library it needs is in the image"
 # the keyboard layouts cage and Suite load (libxkbcommon)
 [ -f "${TARGET_DIR}/usr/share/X11/xkb/rules/evdev" ] || { echo "No keyboard layouts (/usr/share/X11/xkb)" >&2; exit 1; }
 
-# the kiosk at start; the start goes on to the graphical target
-mkdir -p "${TARGET_DIR}/etc/systemd/system/graphical.target.wants"
-ln -sf /etc/systemd/system/phylax-kiosk.service \
-    "${TARGET_DIR}/etc/systemd/system/graphical.target.wants/phylax-kiosk.service"
-ln -sf /usr/lib/systemd/system/graphical.target "${TARGET_DIR}/etc/systemd/system/default.target"
+# The station's files shared with the Raspberry Pi OS image (the repo's rootfs/): Wi-Fi from
+# phylax-wifi.txt, the start-up sound, who may manage Wi-Fi and shut down (polkit)
+for f in usr/local/sbin/phylax-wifi-setup usr/local/sbin/phylax-startup-sound; do
+    install -D -m 0755 "$REPO/rootfs/$f" "${TARGET_DIR}/$f"
+done
+for f in etc/systemd/system/phylax-wifi-setup.service etc/systemd/system/phylax-startup-sound.service \
+    etc/polkit-1/rules.d/50-phylax-station.rules usr/share/phylax/startup.wav; do
+    install -D -m 0644 "$REPO/rootfs/$f" "${TARGET_DIR}/$f"
+done
+
+# the boot partition (phylax-wifi.txt), as on Raspberry Pi OS
+mkdir -p "${TARGET_DIR}/boot/firmware"
+grep -q ' /boot/firmware ' "${TARGET_DIR}/etc/fstab" ||
+    echo 'PARTUUID=50485958-01 /boot/firmware vfat defaults,noatime 0 2' >>"${TARGET_DIR}/etc/fstab"
+
+# The services at start; the start goes on to the graphical target (the kiosk)
+systemctl_target() { "${HOST_DIR}/bin/systemctl" --root="${TARGET_DIR}" "$@"; }
+systemctl_target enable phylax-kiosk.service phylax-startup-sound.service \
+    phylax-wifi-setup.service NetworkManager.service systemd-timesyncd.service
+systemctl_target set-default graphical.target
 
 # station marker and versions (PHYLAX Suite's Settings > Station reads this file)
 BR_VERSION=$(sed -n 's/^BUILDROOT_TAG=//p' "${BR2_EXTERNAL_PHYLAX_PATH}/buildroot.version")

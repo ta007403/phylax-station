@@ -1,4 +1,4 @@
-# PHYLAX station, Buildroot image - milestone 2: PHYLAX Suite in the kiosk (dev).
+# PHYLAX station, Buildroot image - milestone 3: Wi-Fi, Ethernet, shut down / restart, sound (dev).
 # Based on Buildroot's raspberrypicm5io_defconfig.
 
 # CPU and toolchain: glibc (PHYLAX Suite / Electron needs it), prebuilt by Bootlin
@@ -92,6 +92,30 @@ BR2_PACKAGE_UTIL_LINUX_LIBUUID=y
 # fonts: as the Raspberry Pi OS image (fonts-dejavu-core)
 BR2_PACKAGE_DEJAVU=y
 BR2_PACKAGE_FONTCONFIG=y
+
+# Milestone 3: networks through NetworkManager (PHYLAX Suite's Settings > Station uses nmcli), as on
+# the Raspberry Pi OS image; systemd's own network service off (it would take Ethernet too)
+# BR2_PACKAGE_SYSTEMD_NETWORKD is not set
+BR2_PACKAGE_NETWORK_MANAGER=y
+BR2_PACKAGE_NETWORK_MANAGER_CLI=y
+BR2_PACKAGE_NETWORK_MANAGER_TUI=y
+BR2_PACKAGE_WPA_SUPPLICANT=y
+BR2_PACKAGE_WPA_SUPPLICANT_DBUS=y
+BR2_PACKAGE_WPA_SUPPLICANT_WPA3=y
+# the CM5's Wi-Fi chip (CYW43455) firmware; the countries' radio rules
+BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI=y
+BR2_PACKAGE_BRCMFMAC_SDIO_FIRMWARE_RPI_WIFI=y
+BR2_PACKAGE_WIRELESS_REGDB=y
+BR2_PACKAGE_IW=y
+BR2_PACKAGE_UTIL_LINUX_RFKILL=y
+BR2_PACKAGE_CA_CERTIFICATES=y
+# the kiosk user may manage Wi-Fi and shut down / restart (polkit rules, as Raspberry Pi OS)
+BR2_PACKAGE_POLKIT=y
+BR2_PACKAGE_SYSTEMD_POLKIT=y
+# the station's scripts (shared with the Raspberry Pi OS image) are bash; the start-up sound: aplay
+BR2_PACKAGE_BASH=y
+BR2_PACKAGE_ALSA_UTILS=y
+BR2_PACKAGE_ALSA_UTILS_APLAY=y
 
 # System partition
 BR2_TARGET_ROOTFS_EXT2=y
