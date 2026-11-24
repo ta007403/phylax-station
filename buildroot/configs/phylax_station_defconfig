@@ -24,6 +24,7 @@ BR2_TARGET_LOCALTIME="Asia/Bangkok"
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/users.table"
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/post-build.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/post-image.sh"
+BR2_ROOTFS_DEVICE_TABLE="system/device_table.txt $(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/permissions.table"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_PHYLAX_PATH)/board/phylax-station/rootfs-overlay"
 BR2_GENERATE_LOCALE="en_US.UTF-8"
 # logins get a logind session (pam_systemd): the kiosk's cage takes the screen and input through it

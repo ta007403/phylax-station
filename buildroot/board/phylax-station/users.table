@@ -2,5 +2,5 @@
 # The kiosk user: runs PHYLAX Suite (phylax-kiosk.service); no login of any kind. UID as the
 # Raspberry Pi OS image (build/config.env KIOSK_UID).
 phylax 1100 phylax 1100 * /home/phylax /bin/sh plugdev,video,render,input,audio PHYLAX Suite kiosk
-# DEV ONLY: the console login. The production image has none.
-admin -1 admin -1 =123456 /home/admin /bin/sh sudo PHYLAX dev login
+# DEV ONLY: the console login (sudo; reads every log). The production image has none.
+admin -1 admin -1 =123456 /home/admin /bin/sh sudo,systemd-journal PHYLAX dev login

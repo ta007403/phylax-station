@@ -1,0 +1,4 @@
+# PHYLAX station (Buildroot image): file modes set when the system partition is made (makedevs).
+# <name>				<type>	<mode>	<uid>	<gid>	<major>	<minor>	<start>	<inc>	<count>
+# PHYLAX Suite: Chromium's sandbox helper is setuid root
+/opt/phylax-suite/chrome-sandbox	f	4755	0	0	-	-	-	-	-

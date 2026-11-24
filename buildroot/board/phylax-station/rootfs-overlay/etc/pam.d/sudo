@@ -1,0 +1,13 @@
+# PHYLAX station (Buildroot image): Buildroot's package/sudo/sudo.pam without pam_wheel (only the
+# group "wheel" could pass it). Who may use sudo is set by sudoers: the group sudo (dev images).
+auth        sufficient   pam_rootok.so
+auth        required     pam_env.so
+auth        required     pam_unix.so nullok
+
+account     required     pam_unix.so
+
+password    required     pam_unix.so nullok
+
+session     required     pam_limits.so
+session     required     pam_env.so
+session     required     pam_unix.so
