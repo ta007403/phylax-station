@@ -43,6 +43,21 @@ echo "PHYLAX Suite: every library it needs is in the image"
 # the keyboard layouts cage and Suite load (libxkbcommon)
 [ -f "${TARGET_DIR}/usr/share/X11/xkb/rules/evdev" ] || { echo "No keyboard layouts (/usr/share/X11/xkb)" >&2; exit 1; }
 
+# CUPS: PHYLAX Suite (Electron) is linked with its library (libcups) only. No print server, its
+# network listeners (cups-lpd: port 515) and tools: removed, so nothing can start them.
+rm -f "${TARGET_DIR}"/usr/lib/systemd/system/cups* "${TARGET_DIR}"/etc/systemd/system/*/cups* \
+    "${TARGET_DIR}"/usr/lib/udev/rules.d/70-usb-printers.rules
+rm -rf "${TARGET_DIR}/usr/lib/cups" "${TARGET_DIR}/etc/cups" "${TARGET_DIR}/usr/share/cups"
+for f in sbin/cupsd sbin/cupsfilter sbin/cupsctl sbin/cupsaccept sbin/cupsreject sbin/cupsenable \
+    sbin/cupsdisable sbin/lpadmin sbin/lpinfo sbin/lpmove sbin/lpc bin/lp bin/lpr bin/lpq bin/lprm \
+    bin/lpstat bin/cancel bin/lpoptions bin/cupstestppd bin/ipptool bin/ippfind bin/ippeveprinter; do
+    rm -f "${TARGET_DIR}/usr/$f"
+done
+if ls "${TARGET_DIR}"/usr/lib/systemd/system/cups* "${TARGET_DIR}/usr/sbin/cupsd" >/dev/null 2>&1; then
+    echo "CUPS print server still in the image" >&2
+    exit 1
+fi
+
 # The station's files shared with the Raspberry Pi OS image (the repo's rootfs/): Wi-Fi from
 # phylax-wifi.txt, the start-up sound, who may manage Wi-Fi and shut down (polkit)
 for f in usr/local/sbin/phylax-wifi-setup usr/local/sbin/phylax-startup-sound; do
