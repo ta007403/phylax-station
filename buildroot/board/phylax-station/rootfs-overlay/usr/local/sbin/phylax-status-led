@@ -1,0 +1,15 @@
+#!/bin/sh
+# PHYLAX station (Buildroot image): the front status LED (config.txt: gpio-led on GPIO17, label
+# phylax-status).
+#   starting  blinks once a second: the station starts, or PHYLAX Suite is not running
+#   ready     steady: PHYLAX Suite runs (the kiosk service started it)
+#   off       off: shut down (safe to unplug)
+# Does nothing when there is no such LED, so it can never stop the kiosk.
+LED=/sys/class/leds/phylax-status
+[ -d "$LED" ] || exit 0
+case "${1:-}" in
+    starting) echo timer >"$LED/trigger" ;;
+    ready) echo none >"$LED/trigger" && echo 1 >"$LED/brightness" ;;
+    off) echo none >"$LED/trigger" && echo 0 >"$LED/brightness" ;;
+    *) echo "usage: $0 starting|ready|off" >&2; exit 2 ;;
+esac

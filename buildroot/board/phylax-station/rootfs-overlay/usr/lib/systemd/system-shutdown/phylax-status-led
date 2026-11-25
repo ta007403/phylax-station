@@ -1,0 +1,7 @@
+#!/bin/sh
+# PHYLAX station (Buildroot image): systemd runs this last, just before power off or restart:
+# the front status LED off (safe to unplug).
+LED=/sys/class/leds/phylax-status
+[ -d "$LED" ] || exit 0
+echo none >"$LED/trigger"
+echo 0 >"$LED/brightness"

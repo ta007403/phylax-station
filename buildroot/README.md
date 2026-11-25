@@ -35,6 +35,19 @@ cannot damage it; dev: `sudo phylax-system-rw on|off`), PHYLAX Suite's data and 
 are on the data partition, which grows to fill the eMMC at the first start. Production: no login
 of any kind, no consoles, no switching away from PHYLAX Suite.
 
+## Front status LED
+
+A green LED on GPIO17 (header pin 11 → 330 Ω → LED → GND, pin 9), Buildroot image only:
+
+| LED | Meaning |
+|---|---|
+| blinks once a second | starting (from the kernel's start), or PHYLAX Suite is not running |
+| steady | PHYLAX Suite runs |
+| off | shut down: safe to unplug (or no power) |
+
+`config.txt` (`gpio-led` overlay), `phylax-status-led`, the kiosk's drop-in and a systemd
+shut-down hook. Off for the first second or two after power on (the Raspberry Pi firmware).
+
 ## Milestone 4: what to check on the station
 
 Dev image:

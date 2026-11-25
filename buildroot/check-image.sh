@@ -91,6 +91,13 @@ check "the sound" test -s "$R/usr/share/phylax/startup.wav"
 check "aplay" have aplay
 check "enabled: phylax-startup-sound (early, sysinit)" test -L "$R/etc/systemd/system/sysinit.target.wants/phylax-startup-sound.service"
 
+echo "Front status LED (GPIO17)"
+check "config.txt: gpio-led on GPIO17, blinking from the start" grep -qx 'dtoverlay=gpio-led,gpio=17,label=phylax-status,trigger=timer' "$B/config.txt"
+check "the gpio-led overlay" test -s "$B/overlays/gpio-led.dtbo"
+check "phylax-status-led" test -x "$R/usr/local/sbin/phylax-status-led"
+check "steady while PHYLAX Suite runs" grep -q 'ExecStartPost=-+/usr/local/sbin/phylax-status-led ready' "$R/etc/systemd/system/phylax-kiosk.service.d/buildroot.conf"
+check "off at the end of a shut down" test -x "$R/usr/lib/systemd/system-shutdown/phylax-status-led"
+
 echo "Services"
 for s in graphical.target.wants/phylax-kiosk.service multi-user.target.wants/phylax-grow-data.service \
     multi-user.target.wants/phylax-wifi-setup.service multi-user.target.wants/NetworkManager.service; do

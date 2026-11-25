@@ -19,3 +19,7 @@ dtoverlay=dwc2,dr_mode=host
 [all]
 # PHYLAX station: speaker amp MAX98357A on I2S (GPIO 18 BCLK, 19 LRC, 21 DIN)
 dtoverlay=max98357a
+# PHYLAX station: the front status LED on GPIO17 (header pin 11, through 330 ohm to GND). It blinks
+# from the kernel's start (trigger timer: 1 per second); phylax-status-led makes it steady when
+# PHYLAX Suite runs and turns it off at the end of a shut down.
+dtoverlay=gpio-led,gpio=17,label=phylax-status,trigger=timer
